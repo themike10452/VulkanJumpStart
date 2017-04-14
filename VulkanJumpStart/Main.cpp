@@ -1,4 +1,8 @@
-#include "Main.h"
+#include <iostream>
+#include <exception>
+#include <assert.h>
+
+#include "VKFW.h"
 
 class VulkanApplication
 {
@@ -10,7 +14,6 @@ public:
 	}
 
 private:
-	VDeleter<VkDebugReportCallbackEXT> debugCallback = VK_NULL_HANDLE;
 
 	void InitVulkan()
 	{
@@ -66,8 +69,6 @@ private:
 		if (!Vulkan.enableValidationLayers)
 			return;
 
-		debugCallback = VDeleter<VkDebugReportCallbackEXT>{ Vulkan.instance, nullptr };
-
 		VkDebugReportCallbackCreateInfoEXT createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
 		createInfo.pNext = nullptr;
@@ -75,7 +76,7 @@ private:
 		createInfo.pfnCallback = vkfwDebugCallback;
 		createInfo.pUserData = nullptr;
 
-		if (vkCreateDebugReportCallbackEXT(Vulkan.instance, &createInfo, nullptr, debugCallback.Replace()) != VK_SUCCESS)
+		if (vkCreateDebugReportCallbackEXT(Vulkan.instance, &createInfo, nullptr, Vulkan.debugCallback.Replace()) != VK_SUCCESS)
 			throw std::runtime_error("CreateDebugReportCallbackEXT failed");
 	}
 };
