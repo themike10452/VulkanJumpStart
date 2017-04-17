@@ -53,6 +53,33 @@ const char** vkfwGetRequiredInstanceLayers(uint32_t* layerCount)
 	return (const char**)Vulkan.validationLayers.data();
 }
 
+const VkPhysicalDevice vkfwGetPhysicalDevice(const VkInstance* instance, std::function<bool(VkPhysicalDeviceProperties&, VkPhysicalDeviceFeatures&)> predicate)
+{
+	uint32_t deviceCount = 0;
+	vkEnumeratePhysicalDevices(*instance, &deviceCount, nullptr);
+
+	std::vector<VkPhysicalDevice> physicalDevices;
+	physicalDevices.resize(deviceCount);
+
+	vkEnumeratePhysicalDevices(Vulkan.instance, &deviceCount, physicalDevices.data());
+
+	for each (const VkPhysicalDevice& device in physicalDevices)
+	{
+		VkPhysicalDeviceProperties properties = {};
+		vkGetPhysicalDeviceProperties(device, &properties);
+
+		VkPhysicalDeviceFeatures features = {};
+		vkGetPhysicalDeviceFeatures(device, &features);
+
+		if (predicate(properties, features))
+		{
+			return device;
+		}
+	}
+
+	throw std::runtime_error("Failed to find a suitable GPU");
+}
+
 void _loadExportedEntryPoints()
 {
 #define VK_EXPORTED_FUNCTION( FUNC )														\

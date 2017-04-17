@@ -20,6 +20,7 @@ private:
 		vkfwInit();
 		this->CreateInstance();
 		this->SetupDebugLogging();
+		this->SelectDevice();
 	}
 
 	void MainLoop()
@@ -78,6 +79,14 @@ private:
 
 		if (vkCreateDebugReportCallbackEXT(Vulkan.instance, &createInfo, nullptr, Vulkan.debugCallback.Replace()) != VK_SUCCESS)
 			throw std::runtime_error("CreateDebugReportCallbackEXT failed");
+	}
+
+	void SelectDevice()
+	{
+		VkPhysicalDevice physicalDevice = vkfwGetPhysicalDevice(&Vulkan.instance, [](VkPhysicalDeviceProperties& properties, VkPhysicalDeviceFeatures& features) -> bool 
+		{
+			return (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && features.geometryShader);
+		});
 	}
 };
 

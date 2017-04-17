@@ -25,6 +25,9 @@ VK_INSTANCE_LEVEL_FUNCTION( vkGetDeviceProcAddr )
 VK_INSTANCE_LEVEL_FUNCTION( vkDestroyInstance )
 VK_INSTANCE_LEVEL_FUNCTION( vkCreateDebugReportCallbackEXT )
 VK_INSTANCE_LEVEL_FUNCTION( vkDestroyDebugReportCallbackEXT )
+VK_INSTANCE_LEVEL_FUNCTION( vkEnumeratePhysicalDevices )
+VK_INSTANCE_LEVEL_FUNCTION( vkGetPhysicalDeviceProperties )
+VK_INSTANCE_LEVEL_FUNCTION( vkGetPhysicalDeviceFeatures )
 
 #undef VK_INSTANCE_LEVEL_FUNCTION
 #endif
