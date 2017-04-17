@@ -25,7 +25,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkfwDebugCallback(
 
 void vkfwInit()
 {
-	Vulkan.LibHandle = LoadLibrary(L"vulkan-1.dll");
+	Vulkan.LibHandle = LoadLibrary("vulkan-1.dll");
 
 	_loadExportedEntryPoints();
 	_loadGlobalLevelEntryPoints();
@@ -53,31 +53,102 @@ const char** vkfwGetRequiredInstanceLayers(uint32_t* layerCount)
 	return (const char**)Vulkan.validationLayers.data();
 }
 
-const VkPhysicalDevice vkfwGetPhysicalDevice(const VkInstance* instance, std::function<bool(VkPhysicalDeviceProperties&, VkPhysicalDeviceFeatures&)> predicate)
+VkResult vkfwCreateDevice(const VkInstance* instance, VkDevice* outDevice)
 {
 	uint32_t deviceCount = 0;
 	vkEnumeratePhysicalDevices(*instance, &deviceCount, nullptr);
 
-	std::vector<VkPhysicalDevice> physicalDevices;
-	physicalDevices.resize(deviceCount);
+	if (deviceCount < 1)
+		throw std::runtime_error("Could not find a compatible GPU");
 
+	std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
 	vkEnumeratePhysicalDevices(Vulkan.instance, &deviceCount, physicalDevices.data());
 
-	for each (const VkPhysicalDevice& device in physicalDevices)
+	uint32_t
+		bestScore = 0, 
+		bestPhysicalDeviceIndex = 0, 
+		bestQueueFamilyIndex = 0;
+
+	for (uint32_t i = 0; i < deviceCount; i++)
 	{
-		VkPhysicalDeviceProperties properties = {};
-		vkGetPhysicalDeviceProperties(device, &properties);
+		VkPhysicalDeviceProperties deviceProperties = {};
+		vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
 
-		VkPhysicalDeviceFeatures features = {};
-		vkGetPhysicalDeviceFeatures(device, &features);
+		VkPhysicalDeviceFeatures deviceFeatures = {};
+		vkGetPhysicalDeviceFeatures(physicalDevices[i], &deviceFeatures);
 
-		if (predicate(properties, features))
+		uint32_t score = 0, queueFamilyIndex = 0;
+
+		score += deviceProperties.limits.maxImageDimension2D;
+
+		if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+			score += 10000;
+
+		if (!deviceFeatures.geometryShader)
+			score = 0;
+
+		if (score > bestScore)
 		{
-			return device;
+			uint32_t queueFamilyCount = 0;
+			vkGetPhysicalDeviceQueueFamilyProperties(physicalDevices[i], &queueFamilyCount, nullptr);
+
+			std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+			vkGetPhysicalDeviceQueueFamilyProperties(physicalDevices[i], &queueFamilyCount, queueFamilies.data());
+
+			int32_t queueFamilyIndex = -1;
+
+			for (uint32_t i = 0; i < queueFamilyCount; i++)
+			{
+				if (queueFamilies[i].queueCount > 0 &&
+					queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+				{
+					queueFamilyIndex = i;
+					break;
+				}
+			}
+
+			if (queueFamilyIndex > -1)
+			{
+				bestScore = score;
+				bestPhysicalDeviceIndex = i;
+				bestQueueFamilyIndex = queueFamilyIndex;
+			}
 		}
 	}
 
-	throw std::runtime_error("Failed to find a suitable GPU");
+	if (bestScore == 0)
+		throw std::runtime_error("Could not find a suitable GPU");
+
+	float queuePriority = 1.0f;
+
+	VkDeviceQueueCreateInfo queueCreateInfo = {};
+	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueCreateInfo.pNext = nullptr;
+	queueCreateInfo.queueFamilyIndex = bestQueueFamilyIndex;
+	queueCreateInfo.queueCount = 1;
+	queueCreateInfo.pQueuePriorities = &queuePriority;
+
+	VkPhysicalDeviceFeatures deviceFeatures = {};
+
+	VkDeviceCreateInfo deviceCreateInfo = {};
+	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceCreateInfo.pNext = nullptr;
+	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+	deviceCreateInfo.queueCreateInfoCount = 1;
+	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+	deviceCreateInfo.enabledExtensionCount = 0;
+	deviceCreateInfo.enabledLayerCount = 0;
+
+#ifdef VKFW_ENABLE_VALIDATION_LAYERS
+	deviceCreateInfo.enabledLayerCount = Vulkan.validationLayers.size();
+	deviceCreateInfo.ppEnabledLayerNames = Vulkan.validationLayers.data();
+#endif // VKFW_ENABLE_VALIDATION_LAYERS
+
+	VkResult result = vkCreateDevice(physicalDevices[bestPhysicalDeviceIndex], &deviceCreateInfo, nullptr, outDevice);
+	if (result == VK_SUCCESS)
+		_loadDeviceLevelEntryPoints();
+	
+	return result;
 }
 
 void _loadExportedEntryPoints()

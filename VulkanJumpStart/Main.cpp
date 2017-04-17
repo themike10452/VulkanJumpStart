@@ -83,10 +83,7 @@ private:
 
 	void SelectDevice()
 	{
-		VkPhysicalDevice physicalDevice = vkfwGetPhysicalDevice(&Vulkan.instance, [](VkPhysicalDeviceProperties& properties, VkPhysicalDeviceFeatures& features) -> bool 
-		{
-			return (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && features.geometryShader);
-		});
+		vkfwCreateDevice(&Vulkan.instance, Vulkan.device.Replace());
 	}
 };
 

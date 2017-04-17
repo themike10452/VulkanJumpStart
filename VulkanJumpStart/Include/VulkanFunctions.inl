@@ -28,6 +28,8 @@ VK_INSTANCE_LEVEL_FUNCTION( vkDestroyDebugReportCallbackEXT )
 VK_INSTANCE_LEVEL_FUNCTION( vkEnumeratePhysicalDevices )
 VK_INSTANCE_LEVEL_FUNCTION( vkGetPhysicalDeviceProperties )
 VK_INSTANCE_LEVEL_FUNCTION( vkGetPhysicalDeviceFeatures )
+VK_INSTANCE_LEVEL_FUNCTION( vkGetPhysicalDeviceQueueFamilyProperties )
+VK_INSTANCE_LEVEL_FUNCTION( vkCreateDevice )
 
 #undef VK_INSTANCE_LEVEL_FUNCTION
 #endif

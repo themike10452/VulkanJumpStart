@@ -3,8 +3,8 @@
 
 #define MAX_LOADSTRING 100
 
-WCHAR szClassName[MAX_LOADSTRING];
-WCHAR szTitle[MAX_LOADSTRING];
+TCHAR szClassName[MAX_LOADSTRING];
+TCHAR szTitle[MAX_LOADSTRING];
 
 HINSTANCE hInstance;
 HWND hWnd;
@@ -51,8 +51,8 @@ HRESULT Window::Create()
 
 HRESULT Window::FuncRegisterClass()
 {
-	WNDCLASSEXW wndClass;
-	wndClass.cbSize = sizeof(WNDCLASSEXW);
+	WNDCLASSEX wndClass;
+	wndClass.cbSize = sizeof(WNDCLASSEX);
 	wndClass.style = CS_DBLCLKS;
 	wndClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 	wndClass.cbClsExtra = NULL;
@@ -65,7 +65,7 @@ HRESULT Window::FuncRegisterClass()
 	wndClass.lpszMenuName = NULL;
 	wndClass.lpszClassName = szClassName;
 
-	if (!RegisterClassExW(&wndClass))
+	if (!RegisterClassEx(&wndClass))
 	{
 		HRESULT error = GetLastError();
 		if (error != ERROR_CLASS_ALREADY_EXISTS)
@@ -77,7 +77,7 @@ HRESULT Window::FuncRegisterClass()
 
 HRESULT Window::FuncCreateWindow()
 {
-	hWnd = CreateWindowW(
+	hWnd = CreateWindow(
 		szClassName, szTitle,
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,

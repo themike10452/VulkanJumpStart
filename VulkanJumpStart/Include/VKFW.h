@@ -54,7 +54,7 @@ const char** vkfwGetRequiredInstanceExtensions(uint32_t*);
 
 const char** vkfwGetRequiredInstanceLayers(uint32_t*);
 
-const VkPhysicalDevice vkfwGetPhysicalDevice(const VkInstance*, std::function<bool(VkPhysicalDeviceProperties&, VkPhysicalDeviceFeatures&)>);
+VkResult vkfwCreateDevice(const VkInstance*, VkDevice*);
 
 void _loadExportedEntryPoints();
 void _loadGlobalLevelEntryPoints();
