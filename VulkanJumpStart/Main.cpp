@@ -21,6 +21,7 @@ private:
 		this->CreateInstance();
 		this->SetupDebugLogging();
 		this->SelectDevice();
+		this->CreateWindowSurface();
 	}
 
 	void MainLoop()
@@ -62,7 +63,7 @@ private:
 			throw std::runtime_error("Failed to create instance");
 		}
 
-		_loadInstanceLevelEntryPoints();
+		LoadInstanceLevelEntryPoints();
 	}
 
 	void SetupDebugLogging()
@@ -84,6 +85,11 @@ private:
 	void SelectDevice()
 	{
 		vkfwCreateDevice(&Vulkan.instance, Vulkan.device.Replace());
+	}
+
+	void CreateWindowSurface()
+	{
+		vkfwCreateWindowSurface();
 	}
 };
 

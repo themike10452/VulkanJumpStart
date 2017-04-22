@@ -15,12 +15,16 @@
 struct VulkanContext
 {
 	LibraryHandle LibHandle;
+	WindowHandle WndHandle;
 
 	std::vector<char*> extensions;
 	std::vector<char*> validationLayers;
 
 	VkPtr<VkInstance> instance{ &vkDestroyInstance };
 	VkPtr<VkDevice> device{ &vkDestroyDevice };
+	VkPtr<VkSurfaceKHR> surface{ instance, &vkDestroySurfaceKHR };
+	
+	VkQueue graphicsQueue = VK_NULL_HANDLE;
 
 #ifdef VKFW_ENABLE_VALIDATION_LAYERS
 	bool enableValidationLayers = 1;
@@ -51,18 +55,14 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkfwDebugCallback(
 void vkfwInit();
 
 const char** vkfwGetRequiredInstanceExtensions(uint32_t*);
-
 const char** vkfwGetRequiredInstanceLayers(uint32_t*);
 
-VkResult vkfwCreateDevice(const VkInstance*, VkDevice*);
+void vkfwCreateDevice(const VkInstance*, VkDevice*);
+void vkfwCreateWindowSurface();
 
-void _loadExportedEntryPoints();
-void _loadGlobalLevelEntryPoints();
-void _loadInstanceLevelEntryPoints();
-void _loadDeviceLevelEntryPoints();
-
-void _loadRequiredInstanceExtensions();
-void _loadRequiredInstanceLayers();
-bool _checkValidationLayersAvailable();
+void LoadExportedEntryPoints();
+void LoadGlobalLevelEntryPoints();
+void LoadInstanceLevelEntryPoints();
+void LoadDeviceLevelEntryPoints();
 
 #endif // !VKFW_HEADER

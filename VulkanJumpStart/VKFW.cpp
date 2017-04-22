@@ -2,6 +2,10 @@
 
 #include <assert.h>
 
+bool _checkValidationLayersAvailable();
+void _loadRequiredInstanceLayers();
+void _loadRequiredInstanceExtensions();
+
 VulkanContext Vulkan;
 
 #ifdef VKFW_ENABLE_VALIDATION_LAYERS
@@ -27,8 +31,8 @@ void vkfwInit()
 {
 	Vulkan.LibHandle = LoadLibrary("vulkan-1.dll");
 
-	_loadExportedEntryPoints();
-	_loadGlobalLevelEntryPoints();
+	LoadExportedEntryPoints();
+	LoadGlobalLevelEntryPoints();
 
 	_loadRequiredInstanceExtensions();
 	_loadRequiredInstanceLayers();
@@ -53,7 +57,7 @@ const char** vkfwGetRequiredInstanceLayers(uint32_t* layerCount)
 	return (const char**)Vulkan.validationLayers.data();
 }
 
-VkResult vkfwCreateDevice(const VkInstance* instance, VkDevice* outDevice)
+void vkfwCreateDevice(const VkInstance* instance, VkDevice* outDevice)
 {
 	uint32_t deviceCount = 0;
 	vkEnumeratePhysicalDevices(*instance, &deviceCount, nullptr);
@@ -146,12 +150,22 @@ VkResult vkfwCreateDevice(const VkInstance* instance, VkDevice* outDevice)
 
 	VkResult result = vkCreateDevice(physicalDevices[bestPhysicalDeviceIndex], &deviceCreateInfo, nullptr, outDevice);
 	if (result == VK_SUCCESS)
-		_loadDeviceLevelEntryPoints();
-	
-	return result;
+		LoadDeviceLevelEntryPoints();
+	else
+		throw std::runtime_error("vkCreateDevice failed");
+
+	vkGetDeviceQueue(*outDevice, bestQueueFamilyIndex, 0, &Vulkan.graphicsQueue);
+
+	if (!Vulkan.graphicsQueue)
+		throw std::runtime_error("vkGetDeviceQueue failed");
 }
 
-void _loadExportedEntryPoints()
+void vkfwCreateWindowSurface()
+{
+
+}
+
+void LoadExportedEntryPoints()
 {
 #define VK_EXPORTED_FUNCTION( FUNC )														\
 	if ((FUNC = (PFN_##FUNC)LoadProcAddress( Vulkan.LibHandle, #FUNC )) == VK_NULL_HANDLE)	\
@@ -160,7 +174,7 @@ void _loadExportedEntryPoints()
 #include "VulkanFunctions.inl"
 }
 
-void _loadGlobalLevelEntryPoints()
+void LoadGlobalLevelEntryPoints()
 {
 #define VK_GLOBAL_LEVEL_FUNCTION( FUNC )													\
 	if ((FUNC = (PFN_##FUNC)vkGetInstanceProcAddr( nullptr, #FUNC )) == VK_NULL_HANDLE)		\
@@ -169,7 +183,7 @@ void _loadGlobalLevelEntryPoints()
 #include "VulkanFunctions.inl"
 }
 
-void _loadInstanceLevelEntryPoints()
+void LoadInstanceLevelEntryPoints()
 {
 #define VK_INSTANCE_LEVEL_FUNCTION( FUNC )														\
 	if ((FUNC = (PFN_##FUNC)vkGetInstanceProcAddr( Vulkan.instance, #FUNC )) == VK_NULL_HANDLE)	\
@@ -178,7 +192,7 @@ void _loadInstanceLevelEntryPoints()
 #include "VulkanFunctions.inl"
 }
 
-void _loadDeviceLevelEntryPoints()
+void LoadDeviceLevelEntryPoints()
 {
 #define VK_DEVICE_LEVEL_FUNCTION( FUNC )														\
 	if ((FUNC = (PFN_##FUNC)vkGetDeviceProcAddr( Vulkan.device, #FUNC )) == VK_NULL_HANDLE)		\

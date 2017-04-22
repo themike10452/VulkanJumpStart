@@ -30,6 +30,8 @@ VK_INSTANCE_LEVEL_FUNCTION( vkGetPhysicalDeviceProperties )
 VK_INSTANCE_LEVEL_FUNCTION( vkGetPhysicalDeviceFeatures )
 VK_INSTANCE_LEVEL_FUNCTION( vkGetPhysicalDeviceQueueFamilyProperties )
 VK_INSTANCE_LEVEL_FUNCTION( vkCreateDevice )
+VK_INSTANCE_LEVEL_FUNCTION( vkGetDeviceQueue )
+VK_INSTANCE_LEVEL_FUNCTION( vkDestroySurfaceKHR )
 
 #undef VK_INSTANCE_LEVEL_FUNCTION
 #endif
