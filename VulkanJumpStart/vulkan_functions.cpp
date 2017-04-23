@@ -5,4 +5,4 @@
 #define VK_INSTANCE_LEVEL_FUNCTION( FUNC ) PFN_##FUNC FUNC;
 #define VK_DEVICE_LEVEL_FUNCTION( FUNC ) PFN_##FUNC FUNC;
 
-#include "VulkanFunctions.inl"
+#include "vulkan_functions.inl"

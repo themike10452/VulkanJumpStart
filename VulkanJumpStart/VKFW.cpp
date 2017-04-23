@@ -1,14 +1,12 @@
-#include "VKFW.h"
+#include "vkfw.h"
+#include "internal.h"
+#include "platform.h"
 
+#include <vector>
 #include <assert.h>
+#include <iostream>
 
-bool _checkValidationLayersAvailable();
-void _loadRequiredInstanceLayers();
-void _loadRequiredInstanceExtensions();
-
-VulkanContext Vulkan;
-
-#ifdef VKFW_ENABLE_VALIDATION_LAYERS
+#ifdef _VKFW_ENABLE_VALIDATION_LAYERS
 
 VKAPI_ATTR VkBool32 VKAPI_CALL vkfwDebugCallback(
 	VkDebugReportFlagsEXT flags,
@@ -27,34 +25,67 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vkfwDebugCallback(
 
 #endif
 
+VkQueue deviceGraphicsQueue = VK_NULL_HANDLE;
+
+_VKFWlibrary _vkfw;
+
 void vkfwInit()
 {
-	Vulkan.LibHandle = LoadLibrary("vulkan-1.dll");
+	_vkfw.vk.libHandle = LoadDynamicLibrary("vulkan-1.dll");
 
-	LoadExportedEntryPoints();
-	LoadGlobalLevelEntryPoints();
+	_vkfwLoadExportedEntryPoints();
+	_vkfwLoadGlobalLevelEntryPoints();
+	_vkfwLoadRequiredInstanceExtensions();
+	_vkfwLoadRequiredInstanceLayers();
 
-	_loadRequiredInstanceExtensions();
-	_loadRequiredInstanceLayers();
+	if (!_vkfwCheckRequiredLayersAvailability())
+		throw new std::runtime_error("Not all required layers are available");
 
-#ifdef VKFW_ENABLE_VALIDATION_LAYERS
-	if (!_checkValidationLayersAvailable())
-		throw new std::runtime_error("Requested validation layers are not available");
-#endif
+	_vkfw.initialized = VKFW_TRUE;
+}
+
+LibHandle vkfwGetVkLibHandle()
+{
+	return _vkfw.vk.libHandle;
 }
 
 const char** vkfwGetRequiredInstanceExtensions(uint32_t* extensionCount)
 {
 	assert(extensionCount != nullptr);
-	*extensionCount = (uint32_t)Vulkan.extensions.size();
-	return (const char**)Vulkan.extensions.data();
+	*extensionCount = (uint32_t)_vkfw.vk.requiredInstanceExtensions.size();
+	return (const char**)_vkfw.vk.requiredInstanceExtensions.data();
 }
 
 const char** vkfwGetRequiredInstanceLayers(uint32_t* layerCount)
 {
 	assert(layerCount != nullptr);
-	*layerCount = (uint32_t)Vulkan.validationLayers.size();
-	return (const char**)Vulkan.validationLayers.data();
+	*layerCount = (uint32_t)_vkfw.vk.requiredInstanceLayers.size();
+	return (const char**)_vkfw.vk.requiredInstanceLayers.data();
+}
+
+VKFWwindow* vkfwCreateWindow(VkfwUint32 width, VkfwUint32 height, VkfwString title)
+{
+	_VKFWwindow* pWindow = (_VKFWwindow*)calloc(1, sizeof(_VKFWwindow));
+
+	pWindow->windowConfig.width		= width;
+	pWindow->windowConfig.height	= height;
+	pWindow->windowConfig.title		= (VkfwString)malloc(sizeof(char) * ( strlen(title) + 1 ));
+	
+	strcpy(pWindow->windowConfig.title, title);
+
+	_vkfwPlatformCreateWindow(pWindow);
+
+	return (VKFWwindow*)pWindow;
+}
+
+VkResult vkfwCreateWindowSurface(VkInstance instance, const VKFWwindow* pWindow, VkAllocationCallbacks* allocationCallbacks, VkSurfaceKHR* surface)
+{
+	return _vkfwPlatformCreateSurfaceKHR(instance, (const _VKFWwindow*)pWindow, allocationCallbacks, surface);
+}
+
+void vkfwDestroyWindow(VKFWwindow* pWindow)
+{
+	_vkfwPlatformDestroyWindow((_VKFWwindow*)pWindow);
 }
 
 void vkfwCreateDevice(const VkInstance* instance, VkDevice* outDevice)
@@ -66,7 +97,7 @@ void vkfwCreateDevice(const VkInstance* instance, VkDevice* outDevice)
 		throw std::runtime_error("Could not find a compatible GPU");
 
 	std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
-	vkEnumeratePhysicalDevices(Vulkan.instance, &deviceCount, physicalDevices.data());
+	vkEnumeratePhysicalDevices(*instance, &deviceCount, physicalDevices.data());
 
 	uint32_t
 		bestScore = 0, 
@@ -143,108 +174,30 @@ void vkfwCreateDevice(const VkInstance* instance, VkDevice* outDevice)
 	deviceCreateInfo.enabledExtensionCount = 0;
 	deviceCreateInfo.enabledLayerCount = 0;
 
-#ifdef VKFW_ENABLE_VALIDATION_LAYERS
-	deviceCreateInfo.enabledLayerCount = Vulkan.validationLayers.size();
-	deviceCreateInfo.ppEnabledLayerNames = Vulkan.validationLayers.data();
-#endif // VKFW_ENABLE_VALIDATION_LAYERS
-
 	VkResult result = vkCreateDevice(physicalDevices[bestPhysicalDeviceIndex], &deviceCreateInfo, nullptr, outDevice);
-	if (result == VK_SUCCESS)
-		LoadDeviceLevelEntryPoints();
-	else
+	if (result != VK_SUCCESS)
 		throw std::runtime_error("vkCreateDevice failed");
 
-	vkGetDeviceQueue(*outDevice, bestQueueFamilyIndex, 0, &Vulkan.graphicsQueue);
+	vkGetDeviceQueue(*outDevice, bestQueueFamilyIndex, 0, &deviceGraphicsQueue);
 
-	if (!Vulkan.graphicsQueue)
+	if (!deviceGraphicsQueue)
 		throw std::runtime_error("vkGetDeviceQueue failed");
 }
 
-void vkfwCreateWindowSurface()
-{
-
-}
-
-void LoadExportedEntryPoints()
-{
-#define VK_EXPORTED_FUNCTION( FUNC )														\
-	if ((FUNC = (PFN_##FUNC)LoadProcAddress( Vulkan.LibHandle, #FUNC )) == VK_NULL_HANDLE)	\
-		std::cout << "Failed to load exported function: " << #FUNC << std::endl;
-
-#include "VulkanFunctions.inl"
-}
-
-void LoadGlobalLevelEntryPoints()
-{
-#define VK_GLOBAL_LEVEL_FUNCTION( FUNC )													\
-	if ((FUNC = (PFN_##FUNC)vkGetInstanceProcAddr( nullptr, #FUNC )) == VK_NULL_HANDLE)		\
-		std::cout << "Failed to load global function: " << #FUNC << std::endl;
-
-#include "VulkanFunctions.inl"
-}
-
-void LoadInstanceLevelEntryPoints()
+void vkfwLoadInstanceLevelEntryPoints(const VkInstance* instance)
 {
 #define VK_INSTANCE_LEVEL_FUNCTION( FUNC )														\
-	if ((FUNC = (PFN_##FUNC)vkGetInstanceProcAddr( Vulkan.instance, #FUNC )) == VK_NULL_HANDLE)	\
+	if ((FUNC = (PFN_##FUNC)vkGetInstanceProcAddr( *instance, #FUNC )) == VK_NULL_HANDLE)	\
 		std::cout << "Failed to load instance function: " << #FUNC << std::endl;
 
-#include "VulkanFunctions.inl"
+#include "vulkan_functions.inl"
 }
 
-void LoadDeviceLevelEntryPoints()
+void vkfwLoadDeviceLevelEntryPoints(const VkDevice* device)
 {
 #define VK_DEVICE_LEVEL_FUNCTION( FUNC )														\
-	if ((FUNC = (PFN_##FUNC)vkGetDeviceProcAddr( Vulkan.device, #FUNC )) == VK_NULL_HANDLE)		\
+	if ((FUNC = (PFN_##FUNC)vkGetDeviceProcAddr( *device, #FUNC )) == VK_NULL_HANDLE)		\
 		std::cout << "Failed to load device function: " << #FUNC << std::endl;
 
-#include "VulkanFunctions.inl"
-}
-
-bool _checkValidationLayersAvailable()
-{
-	bool available = true;
-
-	uint32_t layerCount;
-	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-	std::vector<VkLayerProperties> properties(layerCount);
-	vkEnumerateInstanceLayerProperties(&layerCount, properties.data());
-
-	for (const char* validationLayerName : Vulkan.validationLayers)
-	{
-		bool found = false;
-
-		for (const VkLayerProperties &prop : properties)
-		{
-			found = found || !strcmp(prop.layerName, validationLayerName);
-			if (found)
-				break;
-		}
-
-		available = available && found;
-		if (!available)
-			break;
-	}
-
-	return available;
-}
-
-void _loadRequiredInstanceLayers()
-{
-#ifdef VKFW_ENABLE_VALIDATION_LAYERS
-	// enable standard validation layer
-	Vulkan.validationLayers.push_back("VK_LAYER_LUNARG_standard_validation");
-#endif
-}
-
-void _loadRequiredInstanceExtensions()
-{
-	Vulkan.extensions.push_back("VK_KHR_surface");
-#ifdef VKFW_ENABLE_VALIDATION_LAYERS
-	Vulkan.extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-#endif
-#ifdef WIN32
-	Vulkan.extensions.push_back("VK_KHR_win32_surface");
-#endif
+#include "vulkan_functions.inl"
 }

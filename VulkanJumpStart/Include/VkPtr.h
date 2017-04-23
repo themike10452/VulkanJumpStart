@@ -17,6 +17,8 @@ public:
 	typedef void(VKAPI_CALL **InstanceLevelDeleter)(VkInstance, T, const VkAllocationCallbacks*);
 	typedef void(VKAPI_CALL **DeviceLevelDeleter)(VkDevice, T, const VkAllocationCallbacks*);
 
+	typedef void(*DestroyFunction)(T);
+
 	VkPtr(const GlobalLevelDeleter pFunc)
 	{
 		DeleteFunc = [=](T obj) { (*pFunc)(obj, nullptr); };
@@ -30,6 +32,11 @@ public:
 	VkPtr(const VkPtr<VkDevice> &device, DeviceLevelDeleter pFunc)
 	{
 		DeleteFunc = [&device, pFunc](T obj) { (*pFunc)(device, obj, nullptr); };
+	}
+
+	VkPtr(const DestroyFunction pFunc)
+	{
+		DeleteFunc = [pFunc](T obj) { (*pFunc)(obj); };
 	}
 
 	~VkPtr()
@@ -53,7 +60,7 @@ public:
 		return object;
 	}
 
-	void operator =(T rhs) const
+	void operator =(T rhs)
 	{
 		if (rhs != object)
 		{

@@ -1,8 +1,9 @@
-#include <iostream>
-#include <exception>
-#include <assert.h>
+#include "vkfw.h"
+#include "vkptr.h"
+#include "smartptr.h"
 
-#include "VKFW.h"
+#include <iostream>
+#include <assert.h>
 
 class VulkanApplication
 {
@@ -14,6 +15,16 @@ public:
 	}
 
 private:
+	struct VkContext
+	{
+		VkPtr<VkInstance> instance{ &vkDestroyInstance };
+		VkPtr<VkDevice> device{ &vkDestroyDevice };
+		VkPtr<VkSurfaceKHR> surface{ instance, &vkDestroySurfaceKHR };
+		VkPtr<VkDebugReportCallbackEXT> debugCallback{ instance, &vkDestroyDebugReportCallbackEXT };
+
+	} Vulkan;
+
+	SmartPtr<VKFWwindow*> window{ vkfwDestroyWindow };
 
 	void InitVulkan()
 	{
@@ -26,9 +37,6 @@ private:
 
 	void MainLoop()
 	{
-		Window window = Window();
-		window.Create();
-		window.Destroy();
 	}
 
 	void CreateInstance()
@@ -63,15 +71,13 @@ private:
 			throw std::runtime_error("Failed to create instance");
 		}
 
-		LoadInstanceLevelEntryPoints();
+		vkfwLoadInstanceLevelEntryPoints(&Vulkan.instance);
 	}
 
 	void SetupDebugLogging()
 	{
-		if (!Vulkan.enableValidationLayers)
-			return;
-
-		VkDebugReportCallbackCreateInfoEXT createInfo = {};
+#if _VKFW_ENABLE_VALIDATION_LAYERS
+		/*VkDebugReportCallbackCreateInfoEXT createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
 		createInfo.pNext = nullptr;
 		createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
@@ -79,17 +85,24 @@ private:
 		createInfo.pUserData = nullptr;
 
 		if (vkCreateDebugReportCallbackEXT(Vulkan.instance, &createInfo, nullptr, Vulkan.debugCallback.Replace()) != VK_SUCCESS)
-			throw std::runtime_error("CreateDebugReportCallbackEXT failed");
+			throw std::runtime_error("CreateDebugReportCallbackEXT failed");*/
+#endif // VKFW_ENABLE_VALIDATION_LAYERS
 	}
 
 	void SelectDevice()
 	{
 		vkfwCreateDevice(&Vulkan.instance, Vulkan.device.Replace());
+		vkfwLoadDeviceLevelEntryPoints(&Vulkan.device);
 	}
 
 	void CreateWindowSurface()
 	{
-		vkfwCreateWindowSurface();
+		window = vkfwCreateWindow(800, 600, "Vulkan");
+
+		if (vkfwCreateWindowSurface(Vulkan.instance, window, nullptr, Vulkan.surface.Replace()) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create surface!");
+		}
 	}
 };
 
