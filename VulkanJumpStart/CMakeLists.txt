@@ -17,8 +17,8 @@ add_definitions ( -std=c++11 )
 include_directories ( Include )
 
 set ( HEADER_FILES
-		"Include/vk_platform.h"
-		"Include/vulkan.h"
+		"Include/vulkan/vk_platform.h"
+		"Include/vulkan/vulkan.h"
 		"Include/types.h"
 		"Include/internal.h"
 		"Include/platform.h"
@@ -27,10 +27,10 @@ set ( HEADER_FILES
 		"Include/vkfw.h"
 		"Include/vulkan_functions.h"
 		"Include/vulkan_functions.inl"
-		"Include/win32_window.h" )
+		"Include/win32_window.h"
+		"Include/main.h")
 
 set ( SOURCE_FILES
-		"platform.cpp"
 		"vkfw.cpp"
 		"internal.cpp"
 		"vulkan_functions.cpp"

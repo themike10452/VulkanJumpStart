@@ -1,8 +1,6 @@
 #ifndef WIN32_WINDOW_HEADER
 #define WIN32_WINDOW_HEADER
 
-#include "vulkan.h"
-
 typedef struct _VKFWwindow _VKFWwindow;
 
 void		_vkfwCreateWindowWin32(_VKFWwindow* pWindow);

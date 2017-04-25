@@ -3,6 +3,7 @@
 
 #include "platform.h"
 #include "types.h"
+
 #include <vector>
 
 #define _VKFW_ENABLE_VALIDATION_LAYERS _DEBUG
@@ -12,13 +13,13 @@ typedef struct _VKFWwindow _VKFWwindow;
 
 struct _VKFWlibrary
 {
-	VkfwBool initialized{ VKFW_FALSE };
+	VKFWbool initialized{ VKFW_FALSE };
 
 	struct
 	{
 		LibHandle libHandle;
-		std::vector<char*> requiredInstanceExtensions;
-		std::vector<char*> requiredInstanceLayers;
+		std::vector<VKFWstring> requiredInstanceExtensions;
+		std::vector<VKFWstring> requiredInstanceLayers;
 	} vk;
 };
 
@@ -28,12 +29,12 @@ struct _VKFWwindow
 
 	struct
 	{
-		VkfwBool	visible;
-		VkfwBool	resizable;
-		VkfwBool	fullscreen;
-		VkfwUint32	width;
-		VkfwUint32	height;
-		VkfwString	title;
+		VKFWbool	visible;
+		VKFWbool	resizable;
+		VKFWbool	fullscreen;
+		VKFWuint32	width;
+		VKFWuint32	height;
+		VKFWstring	title;
 	} windowConfig;
 };
 
@@ -43,6 +44,6 @@ void		_vkfwLoadExportedEntryPoints();
 void		_vkfwLoadGlobalLevelEntryPoints();
 void		_vkfwLoadRequiredInstanceLayers();
 void		_vkfwLoadRequiredInstanceExtensions();
-VkfwBool	_vkfwCheckRequiredLayersAvailability();
+VKFWbool	_vkfwCheckRequiredLayersAvailability();
 
 #endif // !VKFW_INTERNAL_HEADER

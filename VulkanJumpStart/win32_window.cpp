@@ -1,18 +1,17 @@
-#include <comdef.h>
-#include <stdexcept>
-
+#include "vulkan/vulkan.h"
 #include "win32_window.h"
 #include "internal.h"
 #include "vulkan_functions.h"
+
+#include <comdef.h>
+#include <stdexcept>
+#include <iostream>
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 void _vkfwCreateWindowWin32(_VKFWwindow* window)
 {
 	_vkfwRegisterWindowClass();
-
-	//char* windowTitle = (char*)calloc( 1, sizeof(char) * (strlen(window->windowConfig.title) + 1) );
-	//strcpy(windowTitle, window->windowConfig.title);
 
 	window->handle = CreateWindow(
 		_VKFW_WNDCLASSNAME, 

@@ -1,3 +1,4 @@
+#include "vulkan/vulkan.h"
 #include "internal.h"
 #include "vulkan_functions.h"
 #include "platform.h"
@@ -38,9 +39,9 @@ void _vkfwLoadRequiredInstanceExtensions()
 #endif
 }
 
-VkfwBool _vkfwCheckRequiredLayersAvailability()
+VKFWbool _vkfwCheckRequiredLayersAvailability()
 {
-	VkfwBool available = VKFW_TRUE;
+	VKFWbool available = VKFW_TRUE;
 
 	uint32_t layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -50,7 +51,7 @@ VkfwBool _vkfwCheckRequiredLayersAvailability()
 
 	for (const char* validationLayerName : _vkfw.vk.requiredInstanceLayers)
 	{
-		VkfwBool found = VKFW_FALSE;
+		VKFWbool found = VKFW_FALSE;
 
 		for (const VkLayerProperties &prop : properties)
 		{

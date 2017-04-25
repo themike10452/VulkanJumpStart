@@ -24,12 +24,12 @@ public:
 		DeleteFunc = [=](T obj) { (*pFunc)(obj, nullptr); };
 	}
 
-	VkPtr(const VkPtr<VkInstance> &instance, InstanceLevelDeleter pFunc)
+	VkPtr(const VkPtr<VkInstance>& instance, InstanceLevelDeleter pFunc)
 	{
 		DeleteFunc = [&instance, pFunc](T obj) { (*pFunc)(instance, obj, nullptr); };
 	}
 
-	VkPtr(const VkPtr<VkDevice> &device, DeviceLevelDeleter pFunc)
+	VkPtr(const VkPtr<VkDevice>& device, DeviceLevelDeleter pFunc)
 	{
 		DeleteFunc = [&device, pFunc](T obj) { (*pFunc)(device, obj, nullptr); };
 	}

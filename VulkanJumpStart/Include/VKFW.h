@@ -5,21 +5,23 @@
 #include "platform.h"
 #include "types.h"
 
+#include <vector>
+
 typedef struct VKFWwindow VKFWwindow;
+typedef struct QueueFamilyIndices QueueFamilyIndices;
 
-void			vkfwInit();
-LibHandle		vkfwGetVkLibHandle();
+void					vkfwInit();
+LibHandle				vkfwGetVkLibHandle();
 
-const char**	vkfwGetRequiredInstanceExtensions(uint32_t*);
-const char**	vkfwGetRequiredInstanceLayers(uint32_t*);
+const VKFWstring*		vkfwGetRequiredInstanceExtensions(VKFWuint32* pCount);
+const VKFWstring*		vkfwGetRequiredInstanceLayers(VKFWuint32* pCount);
+void					vkfwEnumeratePhysicalDevices(const VkInstance* pInstance, std::vector<VkPhysicalDevice>* pData);
 
-VKFWwindow*		vkfwCreateWindow(VkfwUint32 with, VkfwUint32 height, VkfwString title);
-VkResult		vkfwCreateWindowSurface(VkInstance instance, const VKFWwindow* window, VkAllocationCallbacks* allocationCallbacks, VkSurfaceKHR* surface);
-void			vkfwDestroyWindow(VKFWwindow*);
+VKFWwindow*				vkfwCreateWindow(VKFWuint32 with, VKFWuint32 height, VKFWstring title);
+VkResult				vkfwCreateWindowSurface(const VkInstance* pInstance, const VKFWwindow* pWindow, VkAllocationCallbacks* pCallbacks, VkSurfaceKHR* pSurface);
+void					vkfwDestroyWindow(VKFWwindow* pWindow);
 
-void			vkfwCreateDevice(const VkInstance*, VkDevice*);
-
-void			vkfwLoadInstanceLevelEntryPoints(const VkInstance*);
-void			vkfwLoadDeviceLevelEntryPoints(const VkDevice*);
+void					vkfwLoadInstanceLevelEntryPoints(const VkInstance* pInstance);
+void					vkfwLoadDeviceLevelEntryPoints(const VkDevice* pDevice);
 
 #endif // !VKFW_HEADER

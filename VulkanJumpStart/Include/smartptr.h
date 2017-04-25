@@ -4,10 +4,6 @@
 #include <iostream>
 #include <functional>
 
-#ifndef VKAPI_ATTR
-#include "vulkan.h"
-#endif // !VKAPI_PTR
-
 template<typename T>
 class SmartPtr
 {

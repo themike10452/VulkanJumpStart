@@ -1,15 +1,13 @@
 #ifndef PLATFORM_HEADER
 #define PLATFORM_HEADER
 
-#ifdef WIN32
+#ifdef VK_USE_PLATFORM_WIN32_KHR
 
 #include <Windows.h>
 
 typedef HINSTANCE	LibHandle;
 typedef HINSTANCE	InstanceHandle;
 typedef HWND		WindowHandle;
-
-//#define _vkfwPlatformCreateWindow _vkfwCreateWindowWin32
 
 #define _VKFW_WNDCLASSNAME					"VFKW10"
 #define _VKFW_PLATFORM_SURFACE_EXTENSION	"VK_KHR_win32_surface"

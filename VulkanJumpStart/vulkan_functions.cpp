@@ -1,4 +1,4 @@
-#include "vulkan.h"
+#include "vulkan/vulkan.h"
 
 #define VK_EXPORTED_FUNCTION( FUNC ) PFN_##FUNC FUNC;
 #define VK_GLOBAL_LEVEL_FUNCTION( FUNC ) PFN_##FUNC FUNC;
