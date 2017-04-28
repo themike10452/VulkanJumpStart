@@ -27,8 +27,7 @@ set ( HEADER_FILES
 		"Include/vkfw.h"
 		"Include/vulkan_functions.h"
 		"Include/vulkan_functions.inl"
-		"Include/win32_window.h"
-		"Include/main.h")
+		"Include/win32_window.h")
 
 set ( SOURCE_FILES
 		"vkfw.cpp"

@@ -1,11 +1,12 @@
 #include "vulkan/vulkan.h"
 #include "vkfw.h"
-#include "main.h"
 #include "vkptr.h"
 #include "smartptr.h"
+#include "glm/common.hpp"
 
 #include <iostream>
 #include <vector>
+#include <set>
 #include <assert.h>
 
 #ifdef _DEBUG
@@ -27,13 +28,23 @@ VKAPI_ATTR VkBool32 VKAPI_CALL fnDebugReportCallback(
 
 #endif // _DEBUG
 
+struct QueueFamilyIndices
+{
+	VkfwInt32 graphics = -1;
+	VkfwInt32 present = -1;
+
+	VkfwBool iscomplete() const { return graphics > -1 && present > -1; }
+};
+
 class VulkanApplication
 {
 public:
 	void Run()
 	{
+		vkfwInit();
 		InitVulkan();
 		MainLoop();
+		vkfwDestroy();
 	}
 
 private:
@@ -41,35 +52,38 @@ private:
 	{
 		VkPtr<VkInstance>				instance{ &vkDestroyInstance };
 		VkPtr<VkDebugReportCallbackEXT> debugCallback{ instance, &vkDestroyDebugReportCallbackEXT };
-		VkPtr<VkDevice>					device{ &vkDestroyDevice };
 		VkPtr<VkSurfaceKHR>				surface{ instance, &vkDestroySurfaceKHR };
+		VkPtr<VkDevice>					device{ &vkDestroyDevice };
+        VkPtr<VkSwapchainKHR>           swapchain{ device, &vkDestroySwapchainKHR };
 
 		VkPhysicalDevice				physicalDevice;
 		VkQueue							graphicsQueue;
 		VkQueue							presentQueue;
 
-		struct
-		{
-			VKFWint32					graphicsFamily	= -1;
-			VKFWint32					presentFamily	= -1;
-		} queueFamilyIndices;
+        struct
+        {
+            VkSurfaceCapabilitiesKHR capabilities;
+            VkSurfaceFormatKHR format;
+            VkPresentModeKHR presentMode;
+        } swapchainProperties;
 
 	} Vulkan;
 
-	SmartPtr<VKFWwindow*>				window{ vkfwDestroyWindow };
+	SmartPtr<VkfwWindow*>				window{ vkfwDestroyWindow };
 
 	void InitVulkan()
 	{
-		vkfwInit();
 		this->CreateInstance();
 		this->SetupDebugLogging();
 		this->CreateWindowSurface();
 		this->SelectPhysicalDevice();
 		this->CreateLogicalDevice();
+		this->CreateSwapChain();
 	}
 
 	void MainLoop()
 	{
+
 	}
 
 	void CreateInstance()
@@ -83,21 +97,21 @@ private:
 		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 		appInfo.apiVersion = VK_API_VERSION_1_0;
 
-		VKFWuint32 requiredExtensionCount;
-		const VKFWstring* requiredExtensionNames = vkfwGetRequiredInstanceExtensions(&requiredExtensionCount);
+		VkfwUint32 requiredExtensionCount;
+		const VkfwString* requiredExtensionNames = vkfwGetRequiredInstanceExtensions(&requiredExtensionCount);
 
-		VKFWuint32 layerCount;
-		const VKFWstring* requiredLayerNames = vkfwGetRequiredInstanceLayers(&layerCount);
+		VkfwUint32 layerCount;
+		const VkfwString* requiredLayerNames = vkfwGetRequiredInstanceLayers(&layerCount);
 
-		VkInstanceCreateInfo createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		createInfo.pNext = nullptr;
-		createInfo.pApplicationInfo = &appInfo;
-		createInfo.flags = 0;
-		createInfo.enabledExtensionCount = requiredExtensionCount;
+		VkInstanceCreateInfo createInfo    = {};
+		createInfo.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+		createInfo.pNext                   = nullptr;
+		createInfo.pApplicationInfo        = &appInfo;
+		createInfo.flags                   = 0;
+		createInfo.enabledExtensionCount   = requiredExtensionCount;
 		createInfo.ppEnabledExtensionNames = requiredExtensionNames;
-		createInfo.enabledLayerCount = layerCount;
-		createInfo.ppEnabledLayerNames = requiredLayerNames;
+		createInfo.enabledLayerCount       = layerCount;
+		createInfo.ppEnabledLayerNames     = requiredLayerNames;
 
 		if (vkCreateInstance(&createInfo, nullptr, Vulkan.instance.Replace()) != VK_SUCCESS)
 		{
@@ -111,11 +125,11 @@ private:
 	{
 #ifdef _DEBUG
 		VkDebugReportCallbackCreateInfoEXT createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-		createInfo.pNext = nullptr;
-		createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+		createInfo.sType       = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+		createInfo.pNext       = nullptr;
+		createInfo.flags       = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
 		createInfo.pfnCallback = fnDebugReportCallback;
-		createInfo.pUserData = nullptr;
+		createInfo.pUserData   = nullptr;
 
 		if (vkCreateDebugReportCallbackEXT(Vulkan.instance, &createInfo, nullptr, Vulkan.debugCallback.Replace()) != VK_SUCCESS)
 			throw std::runtime_error("CreateDebugReportCallbackEXT failed");
@@ -134,95 +148,162 @@ private:
 
 	void SelectPhysicalDevice()
 	{
-		VKFWuint32 deviceCount;
 		std::vector<VkPhysicalDevice> physicalDevices;
 
 		vkfwEnumeratePhysicalDevices(&Vulkan.instance, &physicalDevices);
-		deviceCount = (VKFWuint32)physicalDevices.size();
+		VkfwUint32 deviceCount = (VkfwUint32)physicalDevices.size();
 
 		if (deviceCount < 1)
 			throw std::runtime_error("Could not find a compatible GPU");
 
-		VKFWuint32 bestDeviceIndex = DetectPrimaryPhysicalDevice(physicalDevices.data(), deviceCount);
+		VkfwUint32 bestDeviceIndex = DetectOptimalPhysicalDevice(physicalDevices.data(), deviceCount, &Vulkan.surface);
 
 		Vulkan.physicalDevice = physicalDevices[bestDeviceIndex];
 	}
 
 	void CreateLogicalDevice()
 	{
-		QueueFamilyIndices deviceQueueFamilyIndices = GetQueueFamilyIndices(Vulkan.physicalDevice);
+        QueueFamilyIndices deviceQueueFamilyIndices = GetQueueFamilyIndices(&Vulkan.physicalDevice, &Vulkan.surface);
 
-		if (!deviceQueueFamilyIndices.complete())
-			throw std::runtime_error("Could not find a compatible GPU");
-
-		std::vector<VKFWuint32> queueFamilyIndices;
-		queueFamilyIndices.push_back(deviceQueueFamilyIndices.graphics);
-		queueFamilyIndices.push_back(deviceQueueFamilyIndices.present);
+		std::set<VkfwUint32> queueFamilyIndices = {};
+		queueFamilyIndices.insert(deviceQueueFamilyIndices.graphics);
+		queueFamilyIndices.insert(deviceQueueFamilyIndices.present);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfo;
 		
 		float queuePriority = 1.0f;
-		for (const VKFWuint32& queueFamilyIndex : queueFamilyIndices)
+		for (const VkfwUint32& queueFamilyIndex : queueFamilyIndices)
 		{
 			VkDeviceQueueCreateInfo createInfo = {};
-			createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-			createInfo.pNext = nullptr;
-			createInfo.queueFamilyIndex = queueFamilyIndex;
-			createInfo.queueCount = 1;
-			createInfo.pQueuePriorities = &queuePriority;
+			createInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			createInfo.pNext                   = nullptr;
+			createInfo.queueFamilyIndex        = queueFamilyIndex;
+			createInfo.queueCount              = 1;
+			createInfo.pQueuePriorities        = &queuePriority;
 
 			queueCreateInfo.push_back(createInfo);
 		}
 
 		VkPhysicalDeviceFeatures deviceFeatures = {};
 
-		VkDeviceCreateInfo deviceCreateInfo = {};
-		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		deviceCreateInfo.pNext = nullptr;
-		deviceCreateInfo.pQueueCreateInfos = queueCreateInfo.data();
-		deviceCreateInfo.queueCreateInfoCount = (VKFWuint32)queueCreateInfo.size();
-		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
-		deviceCreateInfo.enabledExtensionCount = 0;
-		deviceCreateInfo.enabledLayerCount = 0;
+		VkfwUint32 deviceExtensionCount;
+		const VkfwString* deviceExtensions = vkfwGetRequiredDeviceExtensions(&deviceExtensionCount);
+
+		VkDeviceCreateInfo deviceCreateInfo      = {};
+		deviceCreateInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		deviceCreateInfo.pNext                   = nullptr;
+		deviceCreateInfo.pQueueCreateInfos       = queueCreateInfo.data();
+		deviceCreateInfo.queueCreateInfoCount    = (VkfwUint32)queueCreateInfo.size();
+		deviceCreateInfo.pEnabledFeatures        = &deviceFeatures;
+		deviceCreateInfo.enabledExtensionCount   = deviceExtensionCount;
+		deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions;
+		deviceCreateInfo.enabledLayerCount       = 0;
 
 		if (vkCreateDevice(Vulkan.physicalDevice, &deviceCreateInfo, nullptr, Vulkan.device.Replace()) != VK_SUCCESS)
 			throw std::runtime_error("vkCreateDevice failed");
+
+		vkfwLoadDeviceLevelEntryPoints(&Vulkan.device);
 
 		vkGetDeviceQueue(Vulkan.device, deviceQueueFamilyIndices.graphics, 0, &Vulkan.graphicsQueue);
 		vkGetDeviceQueue(Vulkan.device, deviceQueueFamilyIndices.present, 0, &Vulkan.presentQueue);
 
 		if (!Vulkan.graphicsQueue || !Vulkan.presentQueue)
 			throw std::runtime_error("vkGetDeviceQueue failed");
+	}
 
-		vkfwLoadDeviceLevelEntryPoints(&Vulkan.device);
+	void CreateSwapChain()
+	{
+        VkfwSwapchainSupport swapchainSupport = vkfwQuerySwapchainSupport(&Vulkan.physicalDevice, &Vulkan.surface);
+
+        if (swapchainSupport.formats.empty() ||
+            swapchainSupport.presentModes.empty())
+            throw std::runtime_error("Failed to create swapchain");
+
+        Vulkan.swapchainProperties.capabilities = swapchainSupport.capabilities;
+        Vulkan.swapchainProperties.format       = this->DetectOptimalSurfaceFormat( swapchainSupport.formats.data(), swapchainSupport.formats.size() );
+        Vulkan.swapchainProperties.presentMode  = this->DetectOptimalPresentMode( swapchainSupport.presentModes.data(), swapchainSupport.presentModes.size() );
+
+        VkfwUint32 minImageCount = Vulkan.swapchainProperties.capabilities.maxImageCount == 0
+	        ? Vulkan.swapchainProperties.capabilities.minImageCount + 1
+	        : glm::min(Vulkan.swapchainProperties.capabilities.maxImageCount, Vulkan.swapchainProperties.capabilities.minImageCount + 1);
+
+        VkfwUint32 width, height;
+        vkfwGetWindowResolution(window, &width, &height);
+
+        VkExtent2D windowExtent = Vulkan.swapchainProperties.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()
+	        ? Vulkan.swapchainProperties.capabilities.currentExtent
+	        : VkExtent2D { 
+                width  = glm::clamp(width, Vulkan.swapchainProperties.capabilities.minImageExtent.width, Vulkan.swapchainProperties.capabilities.maxImageExtent.width), 
+                height = glm::clamp(width, Vulkan.swapchainProperties.capabilities.minImageExtent.height, Vulkan.swapchainProperties.capabilities.maxImageExtent.height)
+            };
+
+        VkSwapchainCreateInfoKHR createInfo = {};
+        createInfo.sType                    = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        createInfo.pNext                    = nullptr;
+        createInfo.surface                  = Vulkan.surface;
+        createInfo.imageExtent              = windowExtent;
+        createInfo.imageColorSpace          = Vulkan.swapchainProperties.format.colorSpace;
+        createInfo.presentMode              = Vulkan.swapchainProperties.presentMode;
+        createInfo.imageFormat              = Vulkan.swapchainProperties.format.format;
+        createInfo.oldSwapchain             = nullptr;
+        createInfo.compositeAlpha           = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        createInfo.imageArrayLayers         = 1;
+        createInfo.minImageCount            = minImageCount;
+        createInfo.imageUsage               = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        createInfo.preTransform             = Vulkan.swapchainProperties.capabilities.currentTransform;
+        createInfo.clipped                  = VK_TRUE;
+
+        QueueFamilyIndices indices = GetQueueFamilyIndices( &Vulkan.physicalDevice, &Vulkan.surface );
+        VkfwUint32 queueFamilyIndices[] = { indices.graphics, indices.present };
+
+        if (Vulkan.graphicsQueue != Vulkan.presentQueue)
+        {
+            createInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
+            createInfo.queueFamilyIndexCount = 2;
+            createInfo.pQueueFamilyIndices   = queueFamilyIndices;
+        }
+        else
+        {
+            createInfo.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;
+            createInfo.queueFamilyIndexCount = 0;
+            createInfo.pQueueFamilyIndices   = nullptr;
+        }
+
+        if (vkCreateSwapchainKHR( Vulkan.device, &createInfo, nullptr, Vulkan.swapchain.Replace() ) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create swapchain");
 	}
 
 #pragma region
 
-	VKFWuint32 DetectPrimaryPhysicalDevice(const VkPhysicalDevice* physicalDevices, VKFWuint32 deviceCount)
+	static VkfwUint32 DetectOptimalPhysicalDevice(const VkPhysicalDevice* pPhysicalDevices, VkfwUint32 deviceCount, const VkSurfaceKHR* pSurface)
 	{
-		VKFWuint32
+        assert( pPhysicalDevices != nullptr );
+        assert( pSurface != nullptr );
+
+		VkfwUint32
 			bestScore = 0,
 			bestDeviceIndex = 0;
 
-		for (VKFWuint32 i = 0; i < deviceCount; i++)
+		for (VkfwUint32 i = 0; i < deviceCount; i++)
 		{
 			VkPhysicalDeviceProperties deviceProperties = {};
-			vkGetPhysicalDeviceProperties(physicalDevices[i], &deviceProperties);
+			vkGetPhysicalDeviceProperties(pPhysicalDevices[i], &deviceProperties);
 
 			VkPhysicalDeviceFeatures deviceFeatures = {};
-			vkGetPhysicalDeviceFeatures(physicalDevices[i], &deviceFeatures);
+			vkGetPhysicalDeviceFeatures(pPhysicalDevices[i], &deviceFeatures);
 
-			QueueFamilyIndices queueFamilyIndices = GetQueueFamilyIndices((VkPhysicalDevice)physicalDevices[i]);
+			QueueFamilyIndices queueFamilyIndices = GetQueueFamilyIndices(&pPhysicalDevices[i], pSurface);
 
-			VKFWuint32 score = 0;
+			VkfwUint32 score = 0;
 
 			score += deviceProperties.limits.maxImageDimension2D;
 
 			if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
 				score += 10000;
 
-			if (!deviceFeatures.geometryShader)
+			if (!deviceFeatures.geometryShader || 
+				!vkfwCheckDeviceExtensionSupport(&pPhysicalDevices[i]) ||
+				!queueFamilyIndices.iscomplete())
 				score = 0;
 
 			if (score > bestScore)
@@ -238,21 +319,24 @@ private:
 		return bestDeviceIndex;
 	}
 
-	QueueFamilyIndices GetQueueFamilyIndices(VkPhysicalDevice& physicalDevice)
+	static QueueFamilyIndices GetQueueFamilyIndices(const VkPhysicalDevice* pPhysicalDevice, const VkSurfaceKHR* pSurface)
 	{
+        assert(pPhysicalDevice != nullptr);
+        assert(pSurface != nullptr);
+
 		QueueFamilyIndices queueFamilyIndices;
 
-		VKFWuint32 queueFamilyCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
+		VkfwUint32 queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(*pPhysicalDevice, &queueFamilyCount, nullptr);
 
 		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
+		vkGetPhysicalDeviceQueueFamilyProperties(*pPhysicalDevice, &queueFamilyCount, queueFamilies.data());
 
-		VKFWuint32 i = 0;
+		VkfwUint32 i = 0;
 		for (const VkQueueFamilyProperties& queueFamily : queueFamilies)
 		{
 			VkBool32 presentSupported = VK_FALSE;
-			vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, Vulkan.surface, &presentSupported);
+			vkGetPhysicalDeviceSurfaceSupportKHR(*pPhysicalDevice, i, *pSurface, &presentSupported);
 
 			if (presentSupported)
 				queueFamilyIndices.present = i;
@@ -264,13 +348,44 @@ private:
 				queueFamilyIndices.graphics = i;
 			}
 
-			if (queueFamilyIndices.complete())
+			if (queueFamilyIndices.iscomplete())
 				break;
 
 			i++;
 		}
 
 		return queueFamilyIndices;
+	}
+
+    static VkSurfaceFormatKHR DetectOptimalSurfaceFormat(const VkSurfaceFormatKHR* pSupportedFormats, VkfwUint32 count)
+	{
+        assert( pSupportedFormats != nullptr );
+
+        if (count == 1 && pSupportedFormats[0].format == VK_FORMAT_UNDEFINED)
+            return { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+
+        for (VkfwUint32 i = 0; i < count; i++)
+        {
+            if (pSupportedFormats[i].format     == VK_FORMAT_B8G8R8A8_UNORM && 
+                pSupportedFormats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+                return pSupportedFormats[i];
+        }
+
+        return pSupportedFormats[0];
+	}
+
+    static VkPresentModeKHR DetectOptimalPresentMode(const VkPresentModeKHR* pSupportedModes, VkfwUint32 count)
+	{
+        for (VkfwUint32 i = 0; i < count; i++)
+        {
+            if (pSupportedModes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+                return pSupportedModes[i];
+
+            if (pSupportedModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
+                return pSupportedModes[i];
+        }
+
+        return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
 #pragma endregion Helper Methods

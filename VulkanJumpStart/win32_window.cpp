@@ -9,7 +9,7 @@
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-void _vkfwCreateWindowWin32(_VKFWwindow* window)
+void _vkfwCreateWindowWin32(_VkfwWindow* window)
 {
 	_vkfwRegisterWindowClass();
 
@@ -39,7 +39,7 @@ void _vkfwCreateWindowWin32(_VKFWwindow* window)
 	}
 }
 
-void _vkfwDestroyWindowWin32(_VKFWwindow* window)
+void _vkfwDestroyWindowWin32(_VkfwWindow* window)
 {
 	if (window != nullptr)
 	{
@@ -51,7 +51,7 @@ void _vkfwDestroyWindowWin32(_VKFWwindow* window)
 	}
 }
 
-VkResult _vkfwCreateSurfaceKHRWin32(VkInstance instance, const _VKFWwindow * pWindow, VkAllocationCallbacks * allocationCallbacks, VkSurfaceKHR * surface)
+VkResult _vkfwCreateSurfaceKHRWin32(VkInstance instance, const _VkfwWindow * pWindow, VkAllocationCallbacks * allocationCallbacks, VkSurfaceKHR * surface)
 {
 	VkWin32SurfaceCreateInfoKHR createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;

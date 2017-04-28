@@ -7,21 +7,33 @@
 
 #include <vector>
 
-typedef struct VKFWwindow VKFWwindow;
-typedef struct QueueFamilyIndices QueueFamilyIndices;
+typedef struct VkfwWindow			VkfwWindow;
+typedef struct VkfwSwapchainSupport	VkfwSwapchainSupport;
 
 void					vkfwInit();
+void					vkfwDestroy();
 LibHandle				vkfwGetVkLibHandle();
 
-const VKFWstring*		vkfwGetRequiredInstanceExtensions(VKFWuint32* pCount);
-const VKFWstring*		vkfwGetRequiredInstanceLayers(VKFWuint32* pCount);
+const VkfwString*		vkfwGetRequiredInstanceExtensions(VkfwUint32* pCount);
+const VkfwString*		vkfwGetRequiredInstanceLayers(VkfwUint32* pCount);
+const VkfwString*		vkfwGetRequiredDeviceExtensions(VkfwUint32* pCount);
 void					vkfwEnumeratePhysicalDevices(const VkInstance* pInstance, std::vector<VkPhysicalDevice>* pData);
+VkfwBool				vkfwCheckDeviceExtensionSupport(const VkPhysicalDevice* pPhysicalDevice);
+VkfwSwapchainSupport	vkfwQuerySwapchainSupport(const VkPhysicalDevice* pPhysicalDevice, const VkSurfaceKHR* pSurface);
 
-VKFWwindow*				vkfwCreateWindow(VKFWuint32 with, VKFWuint32 height, VKFWstring title);
-VkResult				vkfwCreateWindowSurface(const VkInstance* pInstance, const VKFWwindow* pWindow, VkAllocationCallbacks* pCallbacks, VkSurfaceKHR* pSurface);
-void					vkfwDestroyWindow(VKFWwindow* pWindow);
+VkfwWindow*				vkfwCreateWindow(VkfwUint32 with, VkfwUint32 height, VkfwString title);
+VkResult				vkfwCreateWindowSurface(const VkInstance* pInstance, const VkfwWindow* pWindow, VkAllocationCallbacks* pCallbacks, VkSurfaceKHR* pSurface);
+void					vkfwDestroyWindow(VkfwWindow* pWindow);
+void                    vkfwGetWindowResolution(const VkfwWindow* pWindow, VkfwUint32* width, VkfwUint32* height);
 
 void					vkfwLoadInstanceLevelEntryPoints(const VkInstance* pInstance);
 void					vkfwLoadDeviceLevelEntryPoints(const VkDevice* pDevice);
+
+struct VkfwSwapchainSupport
+{
+	VkSurfaceCapabilitiesKHR		capabilities;
+	std::vector<VkSurfaceFormatKHR> formats;
+	std::vector<VkPresentModeKHR>	presentModes;
+};
 
 #endif // !VKFW_HEADER

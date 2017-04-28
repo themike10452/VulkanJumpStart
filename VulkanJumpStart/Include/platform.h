@@ -15,6 +15,7 @@ typedef HWND		WindowHandle;
 
 #define LoadProcAddress			GetProcAddress
 #define LoadDynamicLibrary		LoadLibrary
+#define FreeDynamicLibrary		FreeLibrary
 
 #include "win32_window.h"
 

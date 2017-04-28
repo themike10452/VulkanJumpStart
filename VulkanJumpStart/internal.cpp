@@ -39,9 +39,14 @@ void _vkfwLoadRequiredInstanceExtensions()
 #endif
 }
 
-VKFWbool _vkfwCheckRequiredLayersAvailability()
+void _vkfwLoadRequiredDeviceExtensions()
 {
-	VKFWbool available = VKFW_TRUE;
+	_vkfw.vk.requiredDeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+}
+
+VkfwBool _vkfwCheckRequiredLayersAvailability()
+{
+	VkfwBool available = VKFW_TRUE;
 
 	uint32_t layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -51,7 +56,7 @@ VKFWbool _vkfwCheckRequiredLayersAvailability()
 
 	for (const char* validationLayerName : _vkfw.vk.requiredInstanceLayers)
 	{
-		VKFWbool found = VKFW_FALSE;
+		VkfwBool found = VKFW_FALSE;
 
 		for (const VkLayerProperties &prop : properties)
 		{
