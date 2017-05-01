@@ -11,7 +11,10 @@ typedef HWND		WindowHandle;
 
 #define _VKFW_WNDCLASSNAME					"VFKW10"
 #define _VKFW_PLATFORM_SURFACE_EXTENSION	"VK_KHR_win32_surface"
+
+#ifdef VKFW_ENABLE_VALIDATION
 #define _VKFW_STANDARD_VALIDATION_LAYER		"VK_LAYER_LUNARG_standard_validation"
+#endif
 
 #define LoadProcAddress			GetProcAddress
 #define LoadDynamicLibrary		LoadLibrary

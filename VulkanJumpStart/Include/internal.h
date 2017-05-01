@@ -8,8 +8,6 @@
 #include <map>
 #include <assert.h>
 
-#define _VKFW_ENABLE_VALIDATION_LAYERS _DEBUG
-
 typedef struct _VkfwLibrary _VkfwLibrary;
 typedef struct _VkfwWindow _VkfwWindow;
 

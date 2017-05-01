@@ -6,6 +6,8 @@ if( CMAKE_BUILD_TYPE STREQUAL "" )
 	set( CMAKE_BUILD_TYPE "debug" )
 endif()
 
+message ("${CMAKE_BUILD_TYPE} build")
+
 if( NOT USE_PLATFORM MATCHES "VK_USE_PLATFORM_.*" )
 	if( WIN32 )
 		set( USE_PLATFORM "VK_USE_PLATFORM_WIN32_KHR" )

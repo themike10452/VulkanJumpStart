@@ -143,7 +143,7 @@ VkResult vkfwCreateShaderModule( const VkDevice* pDevice, const VkfwString pByte
     VkShaderModuleCreateInfo 
     createInfo          = {};
     createInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.pNext    = nullptr;
+    createInfo.pNext    = VK_NULL_HANDLE;
     createInfo.pCode    = code.data();
     createInfo.codeSize = byteCodeLength;
     createInfo.flags    = 0;
@@ -192,10 +192,10 @@ void vkfwGetWindowResolution(const VkfwWindow* pWindow, VkfwUint32 * width, Vkfw
 
     _VkfwWindow* window = (_VkfwWindow*)pWindow;
     
-    if (width != nullptr)
+    if (width)
         *width = window->config.width;
 
-    if (height != nullptr)
+    if (height)
         *height = window->config.height;
 }
 

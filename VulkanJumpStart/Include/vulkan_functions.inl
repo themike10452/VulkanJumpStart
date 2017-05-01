@@ -21,10 +21,13 @@ VK_GLOBAL_LEVEL_FUNCTION( vkEnumerateInstanceLayerProperties )
 
 #ifdef VK_INSTANCE_LEVEL_FUNCTION
 
-VK_INSTANCE_LEVEL_FUNCTION( vkGetDeviceProcAddr )
-VK_INSTANCE_LEVEL_FUNCTION( vkDestroyInstance )
+#ifdef VKFW_ENABLE_VALIDATION
 VK_INSTANCE_LEVEL_FUNCTION( vkCreateDebugReportCallbackEXT )
 VK_INSTANCE_LEVEL_FUNCTION( vkDestroyDebugReportCallbackEXT )
+#endif // VKFW_ENABLE_VALIDATION
+
+VK_INSTANCE_LEVEL_FUNCTION( vkGetDeviceProcAddr )
+VK_INSTANCE_LEVEL_FUNCTION( vkDestroyInstance )
 VK_INSTANCE_LEVEL_FUNCTION( vkEnumeratePhysicalDevices )
 VK_INSTANCE_LEVEL_FUNCTION( vkEnumerateDeviceExtensionProperties )
 VK_INSTANCE_LEVEL_FUNCTION( vkGetPhysicalDeviceProperties )
