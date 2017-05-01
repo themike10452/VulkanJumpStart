@@ -155,14 +155,17 @@ VkfwWindow* vkfwCreateWindow( VkfwUint32 width, VkfwUint32 height, VkfwString ti
 {
     _VkfwWindow* pWindow = new _VkfwWindow();
 
-    pWindow->windowConfig.width = width;
-    pWindow->windowConfig.height = height;
-    pWindow->windowConfig.visible = VKFW_TRUE;
-    pWindow->windowConfig.title = new VkfwChar[strlen( title ) + 1];
+    pWindow->config.width = width;
+    pWindow->config.height = height;
+    pWindow->config.visible = VKFW_TRUE;
+    pWindow->config.title = new VkfwChar[strlen( title ) + 1];
 
-    strcpy( pWindow->windowConfig.title, title );
+    strcpy( pWindow->config.title, title );
 
     _vkfwPlatformCreateWindow( pWindow );
+
+    if ( pWindow->handle )
+        _vkfw.windowMap.insert( { pWindow->handle, pWindow } );
 
     return (VkfwWindow*)pWindow;
 }
@@ -174,7 +177,13 @@ VkResult vkfwCreateWindowSurface( const VkInstance* pInstance, const VkfwWindow*
 
 void vkfwDestroyWindow( VkfwWindow* pWindow )
 {
-    _vkfwPlatformDestroyWindow( (_VkfwWindow*)pWindow );
+    _VKFW_REQUIRE_PTR_OR_LEAVE( pWindow );
+
+    _VkfwWindow* window = (_VkfwWindow*)pWindow;
+
+    _vkfw.windowMap.erase( window->handle );
+
+    _vkfwPlatformDestroyWindow( window );
 }
 
 void vkfwGetWindowResolution(const VkfwWindow* pWindow, VkfwUint32 * width, VkfwUint32 * height)
@@ -184,10 +193,20 @@ void vkfwGetWindowResolution(const VkfwWindow* pWindow, VkfwUint32 * width, Vkfw
     _VkfwWindow* window = (_VkfwWindow*)pWindow;
     
     if (width != nullptr)
-        *width = window->windowConfig.width;
+        *width = window->config.width;
 
     if (height != nullptr)
-        *height = window->windowConfig.height;
+        *height = window->config.height;
+}
+
+VkfwBool vkfwWindowShouldClose( const VkfwWindow* pWindow )
+{
+    return ((const _VkfwWindow*)pWindow)->state.shouldClose;
+}
+
+void vkfwPollEvents()
+{
+    _vkfwPlatformPollEvents();
 }
 
 void vkfwLoadInstanceLevelEntryPoints( const VkInstance* pInstance )

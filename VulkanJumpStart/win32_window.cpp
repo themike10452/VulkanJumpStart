@@ -5,7 +5,6 @@
 
 #include <comdef.h>
 #include <stdexcept>
-#include <iostream>
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -15,11 +14,11 @@ void _vkfwCreateWindowWin32(_VkfwWindow* window)
 
 	window->handle = CreateWindow(
 		_VKFW_WNDCLASSNAME, 
-		window->windowConfig.title,
+		window->config.title,
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		window->windowConfig.width,
-		window->windowConfig.height,
+		window->config.width,
+		window->config.height,
 		NULL,
 		NULL,
 		GetModuleHandle(0),
@@ -33,23 +32,26 @@ void _vkfwCreateWindowWin32(_VkfwWindow* window)
 		throw std::runtime_error(err.ErrorMessage());
 	}
 
-	if (window->windowConfig.visible)
+	if ( (window->state.visible = window->config.visible) )
 	{
 		ShowWindow(window->handle, SW_SHOW);
 	}
+
+    window->state.shouldClose = VKFW_FALSE;
 }
 
 void _vkfwDestroyWindowWin32(_VkfwWindow* window)
 {
 	if (window != nullptr)
 	{
-        delete window->windowConfig.title;
+        DestroyWindow( window->handle );
+        UnregisterClass(_VKFW_WNDCLASSNAME, GetModuleHandle(0));
+
+        delete window->config.title;
         delete window;
 
-        window->windowConfig.title = nullptr;
-		window = nullptr;
-
-		UnregisterClass(_VKFW_WNDCLASSNAME, GetModuleHandle(0));
+        window->config.title = nullptr;
+        window = nullptr;
 	}
 }
 
@@ -91,7 +93,36 @@ void _vkfwRegisterWindowClass()
 	}
 }
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+void _vkfwPollEventsWin32()
 {
-	return DefWindowProc(hWnd, msg, wParam, lParam);
+    MSG msg;
+
+    if (GetMessage( &msg, nullptr, 0, 0 ))
+    {
+        TranslateMessage( &msg );
+        DispatchMessage( &msg );
+    }
+}
+
+LRESULT CALLBACK WndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
+{
+    switch (msg)
+    {
+        case WM_CLOSE:
+            {
+                const auto it = _vkfw.windowMap.find( hWnd );
+                if ( it != _vkfw.windowMap.end() )
+                    it->second->state.shouldClose = VKFW_TRUE;
+                break;
+            }
+        case WM_DESTROY:
+            {
+                // do nothing
+                break;
+            }
+        default:
+            return DefWindowProc( hWnd, msg, wParam, lParam );
+    }
+
+    return 0;
 }

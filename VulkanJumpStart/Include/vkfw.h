@@ -26,6 +26,8 @@ VkfwWindow*				vkfwCreateWindow( VkfwUint32 with, VkfwUint32 height, VkfwString 
 VkResult				vkfwCreateWindowSurface( const VkInstance* pInstance, const VkfwWindow* pWindow, VkAllocationCallbacks* pCallbacks, VkSurfaceKHR* pSurface );
 void					vkfwDestroyWindow( VkfwWindow* pWindow );
 void                    vkfwGetWindowResolution( const VkfwWindow* pWindow, VkfwUint32* width, VkfwUint32* height );
+VkfwBool                vkfwWindowShouldClose( const VkfwWindow* pWindow );
+void                    vkfwPollEvents();
 
 void					vkfwLoadInstanceLevelEntryPoints( const VkInstance* pInstance );
 void					vkfwLoadDeviceLevelEntryPoints( const VkDevice* pDevice );

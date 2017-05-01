@@ -5,6 +5,7 @@
 #include "types.h"
 
 #include <vector>
+#include <map>
 #include <assert.h>
 
 #define _VKFW_ENABLE_VALIDATION_LAYERS _DEBUG
@@ -14,14 +15,16 @@ typedef struct _VkfwWindow _VkfwWindow;
 
 struct _VkfwLibrary
 {
-	VkfwBool						initialized{ VKFW_FALSE };
+	VkfwBool						    initialized{ VKFW_FALSE };
+
+    std::map<WindowHandle, _VkfwWindow*> windowMap;
 
 	struct
 	{
-		LibHandle					libHandle;
-		std::vector<VkfwString>		requiredInstanceExtensions;
-		std::vector<VkfwString>		requiredInstanceLayers;
-		std::vector<VkfwString>		requiredDeviceExtensions;
+		LibHandle					    libHandle;
+		std::vector<VkfwString>		    requiredInstanceExtensions;
+		std::vector<VkfwString>		    requiredInstanceLayers;
+		std::vector<VkfwString>		    requiredDeviceExtensions;
 	} vk;
 };
 
@@ -37,17 +40,27 @@ struct _VkfwWindow
 		VkfwUint32	width;
 		VkfwUint32	height;
 		VkfwString	title;
-	} windowConfig;
+	} config;
+
+    struct
+    {
+        VkfwBool visible;
+        VkfwBool shouldClose;
+    } state;
 };
 
 extern _VkfwLibrary _vkfw;
 
-#define _VKFW_REQUIRE_INIT( )		\
-	if (!_vkfw.initialized)			\
+#define _VKFW_REQUIRE_INIT( )		                \
+	if (!_vkfw.initialized)			                \
 		throw std::runtime_error("vkfw not initialized. Call vkfwInit() first.");
 
-#define _VKFW_REQUIRE_PTR( ptr )	\
+#define _VKFW_REQUIRE_PTR( ptr )	                \
 	assert( ptr != nullptr && ptr != NULL );
+
+#define _VKFW_REQUIRE_PTR_OR_LEAVE( ptr )           \
+    if ( ptr == nullptr || ptr == NULL || !ptr )    \
+        return;
 
 void		_vkfwLoadExportedEntryPoints();
 void		_vkfwLoadGlobalLevelEntryPoints();

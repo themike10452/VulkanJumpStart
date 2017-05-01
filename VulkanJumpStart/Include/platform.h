@@ -22,6 +22,7 @@ typedef HWND		WindowHandle;
 #define _vkfwPlatformCreateWindow		_vkfwCreateWindowWin32
 #define _vkfwPlatformDestroyWindow		_vkfwDestroyWindowWin32
 #define _vkfwPlatformCreateSurfaceKHR	_vkfwCreateSurfaceKHRWin32
+#define _vkfwPlatformPollEvents         _vkfwPollEventsWin32
 
 #endif // VK_USE_PLATFORM_WIN32_KHR
 
