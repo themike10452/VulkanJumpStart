@@ -55,7 +55,7 @@ const VkfwString* vkfwGetRequiredInstanceLayers( VkfwUint32* pCount )
     _VKFW_REQUIRE_PTR(pCount);
 
     *pCount = (VkfwUint32)_vkfw.vk.requiredInstanceLayers.size();
-    return (const VkfwString*)_vkfw.vk.requiredInstanceLayers.data();
+    return const_cast<const VkfwString*>(_vkfw.vk.requiredInstanceLayers.data());
 }
 
 const VkfwString* vkfwGetRequiredDeviceExtensions( VkfwUint32* pCount )
@@ -64,7 +64,7 @@ const VkfwString* vkfwGetRequiredDeviceExtensions( VkfwUint32* pCount )
     _VKFW_REQUIRE_PTR(pCount);
 
     *pCount = (VkfwUint32)_vkfw.vk.requiredDeviceExtensions.size();
-    return (const VkfwString*)_vkfw.vk.requiredDeviceExtensions.data();
+    return const_cast<const VkfwString*>(_vkfw.vk.requiredDeviceExtensions.data());
 }
 
 void vkfwEnumeratePhysicalDevices( const VkInstance* pInstance, std::vector<VkPhysicalDevice>* pData )
@@ -131,14 +131,34 @@ VkfwSwapchainSupport vkfwQuerySwapchainSupport( const VkPhysicalDevice* pPhysica
     return swapchainSupport;
 }
 
+VkResult vkfwCreateShaderModule( const VkDevice* pDevice, const VkfwString pBytecode, VkfwSize byteCodeLength, const VkAllocationCallbacks* pCallbacks, VkShaderModule* pShaderModule )
+{
+    _VKFW_REQUIRE_PTR( pDevice );
+    _VKFW_REQUIRE_PTR( pBytecode );
+    _VKFW_REQUIRE_PTR( pShaderModule );
+
+    std::vector<uint32_t> code( (byteCodeLength / sizeof(uint32_t)) + 1 );
+    memcpy(code.data(), pBytecode, byteCodeLength);
+
+    VkShaderModuleCreateInfo 
+    createInfo          = {};
+    createInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.pNext    = nullptr;
+    createInfo.pCode    = code.data();
+    createInfo.codeSize = byteCodeLength;
+    createInfo.flags    = 0;
+
+    return vkCreateShaderModule( *pDevice, &createInfo, pCallbacks, pShaderModule );
+}
+
 VkfwWindow* vkfwCreateWindow( VkfwUint32 width, VkfwUint32 height, VkfwString title )
 {
-    _VkfwWindow* pWindow = (_VkfwWindow*)calloc( 1, sizeof(_VkfwWindow) );
+    _VkfwWindow* pWindow = new _VkfwWindow();
 
     pWindow->windowConfig.width = width;
     pWindow->windowConfig.height = height;
     pWindow->windowConfig.visible = VKFW_TRUE;
-    pWindow->windowConfig.title = (VkfwString)malloc( sizeof(char) * (strlen( title ) + 1) );
+    pWindow->windowConfig.title = new VkfwChar[strlen( title ) + 1];
 
     strcpy( pWindow->windowConfig.title, title );
 

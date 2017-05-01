@@ -47,7 +47,7 @@ extern _VkfwLibrary _vkfw;
 		throw std::runtime_error("vkfw not initialized. Call vkfwInit() first.");
 
 #define _VKFW_REQUIRE_PTR( ptr )	\
-	assert(ptr != nullptr);
+	assert( ptr != nullptr && ptr != NULL );
 
 void		_vkfwLoadExportedEntryPoints();
 void		_vkfwLoadGlobalLevelEntryPoints();

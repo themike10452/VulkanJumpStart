@@ -43,8 +43,10 @@ void _vkfwDestroyWindowWin32(_VkfwWindow* window)
 {
 	if (window != nullptr)
 	{
-		free(window->windowConfig.title);
-		free(window);
+        delete window->windowConfig.title;
+        delete window;
+
+        window->windowConfig.title = nullptr;
 		window = nullptr;
 
 		UnregisterClass(_VKFW_WNDCLASSNAME, GetModuleHandle(0));

@@ -48,6 +48,17 @@ VK_DEVICE_LEVEL_FUNCTION( vkGetDeviceQueue )
 VK_DEVICE_LEVEL_FUNCTION( vkQueueWaitIdle )
 VK_DEVICE_LEVEL_FUNCTION( vkCreateSwapchainKHR )
 VK_DEVICE_LEVEL_FUNCTION( vkDestroySwapchainKHR )
+VK_DEVICE_LEVEL_FUNCTION( vkGetSwapchainImagesKHR )
+VK_DEVICE_LEVEL_FUNCTION( vkCreateImageView )
+VK_DEVICE_LEVEL_FUNCTION( vkDestroyImageView )
+VK_DEVICE_LEVEL_FUNCTION( vkCreateShaderModule )
+VK_DEVICE_LEVEL_FUNCTION( vkDestroyShaderModule )
+VK_DEVICE_LEVEL_FUNCTION( vkCreateRenderPass )
+VK_DEVICE_LEVEL_FUNCTION( vkDestroyRenderPass )
+VK_DEVICE_LEVEL_FUNCTION( vkCreatePipelineLayout )
+VK_DEVICE_LEVEL_FUNCTION( vkDestroyPipelineLayout )
+VK_DEVICE_LEVEL_FUNCTION( vkDestroyPipeline )
+VK_DEVICE_LEVEL_FUNCTION( vkCreateGraphicsPipelines )
 
 #undef VK_DEVICE_LEVEL_FUNCTION
 #endif

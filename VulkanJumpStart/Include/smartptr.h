@@ -52,7 +52,7 @@ public:
 	template<typename V>
 	bool operator == (V rhs)
 	{
-		return object == T(rhs)
+		return object == T(rhs);
 	}
 
 private:

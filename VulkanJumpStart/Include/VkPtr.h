@@ -21,22 +21,22 @@ public:
 
 	VkPtr(const GlobalLevelDeleter pFunc)
 	{
-		DeleteFunc = [=](T obj) { (*pFunc)(obj, nullptr); };
+		_deleteFunc = [=](T obj) { (*pFunc)(obj, nullptr); };
 	}
 
 	VkPtr(const VkPtr<VkInstance>& instance, InstanceLevelDeleter pFunc)
 	{
-		DeleteFunc = [&instance, pFunc](T obj) { (*pFunc)(instance, obj, nullptr); };
+		_deleteFunc = [&instance, pFunc](T obj) { (*pFunc)(instance, obj, nullptr); };
 	}
 
 	VkPtr(const VkPtr<VkDevice>& device, DeviceLevelDeleter pFunc)
 	{
-		DeleteFunc = [&device, pFunc](T obj) { (*pFunc)(device, obj, nullptr); };
+		_deleteFunc = [&device, pFunc](T obj) { (*pFunc)(device, obj, nullptr); };
 	}
 
 	VkPtr(const DestroyFunction pFunc)
 	{
-		DeleteFunc = [pFunc](T obj) { (*pFunc)(obj); };
+		_deleteFunc = [pFunc](T obj) { (*pFunc)(obj); };
 	}
 
 	~VkPtr()
@@ -46,45 +46,45 @@ public:
 
 	const T* operator &() const
 	{
-		return &object;
+		return &_object;
 	}
 
 	T* Replace()
 	{
 		Cleanup();
-		return &object;
+		return &_object;
 	}
 
 	operator T() const
 	{
-		return object;
+		return _object;
 	}
 
 	void operator =(T rhs)
 	{
-		if (rhs != object)
+		if (rhs != _object)
 		{
 			Cleanup();
-			object = rhs;
+			_object = rhs;
 		}
 	}
 
 	template<typename V>
 	bool operator == (V rhs)
 	{
-		return object == T(rhs)
+		return _object == T(rhs);
 	}
 
 private:
-	T object{ VK_NULL_HANDLE };
-	std::function<void(T)> DeleteFunc;
+	T _object{ VK_NULL_HANDLE };
+	std::function<void(T)> _deleteFunc;
 
 	void Cleanup()
 	{
-		if (object != VK_NULL_HANDLE)
+		if (_object != VK_NULL_HANDLE)
 		{
-			DeleteFunc(object);
-			object = VK_NULL_HANDLE;
+			_deleteFunc(_object);
+			_object = VK_NULL_HANDLE;
 		}
 	}
 };
