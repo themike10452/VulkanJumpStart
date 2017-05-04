@@ -2,8 +2,8 @@ cmake_minimum_required ( VERSION 3.0 )
 
 project ( "VulkanJumpStart" )
 
-if( CMAKE_BUILD_TYPE STREQUAL "" )
-	set( CMAKE_BUILD_TYPE "debug" )
+if( NOT CMAKE_BUILD_TYPE )
+	set( CMAKE_BUILD_TYPE "Debug" )
 endif()
 
 message ("${CMAKE_BUILD_TYPE} build")
@@ -29,8 +29,9 @@ if ( WIN32 )
 	set( CMAKE_CXX_FLAGS_DEBUG           "${CMAKE_CXX_FLAGS_DEBUG} /MTd" )
 endif()
 
-if( CMAKE_BUILD_TYPE STREQUAL "debug" )
+if( CMAKE_BUILD_TYPE STREQUAL Debug )
 	add_definitions ( -D_DEBUG )
+	add_definitions ( -DVKFW_ENABLE_VALIDATION )
 endif()
 
 add_definitions ( -DVK_NO_PROTOTYPES )
