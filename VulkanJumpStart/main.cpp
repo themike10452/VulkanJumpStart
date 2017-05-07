@@ -1,9 +1,10 @@
 #include "vulkan/vulkan.h"
+#include "glm/common.hpp"
 #include "vkfw.h"
 #include "vkptr.h"
 #include "smartptr.h"
 #include "tools.h"
-#include "glm/common.hpp"
+#include "helper_macros.h"
 
 #include <iostream>
 #include <vector>
@@ -52,10 +53,8 @@ class VulkanApplication
 public:
 	void Run()
 	{
-		vkfwInit();
 		InitVulkan();
 		MainLoop();
-		vkfwDestroy();
 	}
 
 private:
@@ -126,6 +125,8 @@ private:
 
 	void MainLoop()
 	{
+        VkPipelineStageFlags waitStages[1] = { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
+
         while ( vkfwWindowShouldClose( window ) != VKFW_TRUE )
         {
             vkfwPollEvents();
@@ -138,8 +139,6 @@ private:
                 Vulkan.semaphoreImageAvailable,
                 VK_NULL_HANDLE,
                 &imageIndex );
-
-            VkPipelineStageFlags waitStages[1] = { VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT };
 
             VkSubmitInfo
             submitInfo                      = {};
@@ -164,7 +163,7 @@ private:
             presentInfo.pWaitSemaphores    = &Vulkan.semaphoreRenderFinished;
             presentInfo.swapchainCount     = 1;
             presentInfo.pSwapchains        = &Vulkan.swapchain;
-            presentInfo.pImageIndices      =  &imageIndex;
+            presentInfo.pImageIndices      = &imageIndex;
             presentInfo.pResults           = VK_NULL_HANDLE;
 
             if ( vkQueuePresentKHR( Vulkan.queues.graphics, &presentInfo ) != VK_SUCCESS )
@@ -227,7 +226,7 @@ private:
 
 	void CreateWindowSurface()
 	{
-		window = vkfwCreateWindow(800, 600, "Vulkan");
+		window = vkfwCreateWindow( 800, 600, VTEXT( "Vulkan" ) );
 
 		if (vkfwCreateWindowSurface(&Vulkan.instance, window, nullptr, Vulkan.surface.Replace()) != VK_SUCCESS)
 		{
@@ -851,10 +850,11 @@ private:
 
 int main(int argc, char** argv)
 {
-	VulkanApplication application;
+    vkfwInit();
 
 	try
 	{
+        VulkanApplication application;
 		application.Run();
 	}
 	catch (const std::exception &e)
@@ -862,6 +862,8 @@ int main(int argc, char** argv)
 		std::cerr << e.what() << std::endl;
 		return EXIT_FAILURE;
 	}
+
+    vkfwDestroy();
 
 	return EXIT_SUCCESS;
 }

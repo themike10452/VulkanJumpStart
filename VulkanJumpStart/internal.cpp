@@ -2,8 +2,11 @@
 #include "internal.h"
 #include "vulkan_functions.h"
 #include "platform.h"
+#include "tools.h"
+#include "helper_macros.h"
 
 #include <iostream>
+#include <string.h>
 
 void _vkfwLoadExportedEntryPoints()
 {
@@ -26,22 +29,22 @@ void _vkfwLoadGlobalLevelEntryPoints()
 void _vkfwLoadRequiredInstanceLayers()
 {
 #ifdef VKFW_ENABLE_VALIDATION
-	_vkfw.vk.requiredInstanceLayers.push_back(_VKFW_STANDARD_VALIDATION_LAYER);
+	_vkfw.vk.requiredInstanceLayers.push_back( VTEXT( _VKFW_STANDARD_VALIDATION_LAYER ) );
 #endif
 }
 
 void _vkfwLoadRequiredInstanceExtensions()
 {
-	_vkfw.vk.requiredInstanceExtensions.push_back("VK_KHR_surface");
-	_vkfw.vk.requiredInstanceExtensions.push_back(_VKFW_PLATFORM_SURFACE_EXTENSION);
+	_vkfw.vk.requiredInstanceExtensions.push_back( VTEXT( "VK_KHR_surface" ) );
+	_vkfw.vk.requiredInstanceExtensions.push_back( VTEXT( _VKFW_PLATFORM_SURFACE_EXTENSION ) );
 #ifdef VKFW_ENABLE_VALIDATION
-	_vkfw.vk.requiredInstanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+	_vkfw.vk.requiredInstanceExtensions.push_back( VTEXT( VK_EXT_DEBUG_REPORT_EXTENSION_NAME ) );
 #endif
 }
 
 void _vkfwLoadRequiredDeviceExtensions()
 {
-	_vkfw.vk.requiredDeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+	_vkfw.vk.requiredDeviceExtensions = { VTEXT( VK_KHR_SWAPCHAIN_EXTENSION_NAME ) };
 }
 
 VkfwBool _vkfwCheckRequiredLayersAvailability()

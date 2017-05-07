@@ -38,7 +38,11 @@ VK_INSTANCE_LEVEL_FUNCTION( vkGetPhysicalDeviceSurfaceFormatsKHR )
 VK_INSTANCE_LEVEL_FUNCTION( vkGetPhysicalDeviceSurfaceCapabilitiesKHR )
 VK_INSTANCE_LEVEL_FUNCTION( vkGetPhysicalDeviceSurfacePresentModesKHR )
 VK_INSTANCE_LEVEL_FUNCTION( vkCreateDevice )
+#ifdef VK_USE_PLATFORM_WIN32_KHR
 VK_INSTANCE_LEVEL_FUNCTION( vkCreateWin32SurfaceKHR )
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+VK_INSTANCE_LEVEL_FUNCTION( vkCreateXlibSurfaceKHR )
+#endif
 VK_INSTANCE_LEVEL_FUNCTION( vkDestroySurfaceKHR )
 
 #undef VK_INSTANCE_LEVEL_FUNCTION

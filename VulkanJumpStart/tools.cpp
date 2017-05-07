@@ -1,10 +1,7 @@
 #include "tools.h"
+#include "helper_macros.h"
 
 #include <fstream>
-#include <assert.h>
-
-#define REQUIRE_PTR( ptr ) \
-    assert( ptr != nullptr && ptr != NULL );
 
 namespace tools
 {

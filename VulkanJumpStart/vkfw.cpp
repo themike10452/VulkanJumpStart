@@ -1,8 +1,11 @@
 #include "vulkan/vulkan.h"
 #include "vkfw.h"
 #include "internal.h"
+#include "tools.h"
+#include "helper_macros.h"
 
 #include <iostream>
+#include <string.h>
 
 VkQueue deviceGraphicsQueue = VK_NULL_HANDLE;
 
@@ -10,7 +13,7 @@ _VkfwLibrary _vkfw;
 
 void vkfwInit()
 {
-    _vkfw.vk.libHandle = LoadDynamicLibrary( "vulkan-1.dll" );
+    _vkfw.vk.libHandle = LoadDynamicLibrary( VTEXT( _VKFW_VULKAN_LIBRARY ) );
 
     _vkfwLoadExportedEntryPoints();
     _vkfwLoadGlobalLevelEntryPoints();
@@ -29,7 +32,7 @@ void vkfwDestroy()
 {
     if (_vkfw.initialized)
     {
-        FreeLibrary( _vkfw.vk.libHandle );
+        FreeDynamicLibrary( _vkfw.vk.libHandle );
     }
 }
 
@@ -43,7 +46,7 @@ LibHandle vkfwGetVkLibHandle()
 const VkfwString* vkfwGetRequiredInstanceExtensions( VkfwUint32* pCount )
 {
     _VKFW_REQUIRE_INIT();
-    _VKFW_REQUIRE_PTR(pCount);
+    REQUIRE_PTR(pCount);
 
     *pCount = (VkfwUint32)_vkfw.vk.requiredInstanceExtensions.size();
     return (const VkfwString*)_vkfw.vk.requiredInstanceExtensions.data();
@@ -52,7 +55,7 @@ const VkfwString* vkfwGetRequiredInstanceExtensions( VkfwUint32* pCount )
 const VkfwString* vkfwGetRequiredInstanceLayers( VkfwUint32* pCount )
 {
     _VKFW_REQUIRE_INIT();
-    _VKFW_REQUIRE_PTR(pCount);
+    REQUIRE_PTR(pCount);
 
     *pCount = (VkfwUint32)_vkfw.vk.requiredInstanceLayers.size();
     return const_cast<const VkfwString*>(_vkfw.vk.requiredInstanceLayers.data());
@@ -61,7 +64,7 @@ const VkfwString* vkfwGetRequiredInstanceLayers( VkfwUint32* pCount )
 const VkfwString* vkfwGetRequiredDeviceExtensions( VkfwUint32* pCount )
 {
     _VKFW_REQUIRE_INIT();
-    _VKFW_REQUIRE_PTR(pCount);
+    REQUIRE_PTR(pCount);
 
     *pCount = (VkfwUint32)_vkfw.vk.requiredDeviceExtensions.size();
     return const_cast<const VkfwString*>(_vkfw.vk.requiredDeviceExtensions.data());
@@ -69,7 +72,7 @@ const VkfwString* vkfwGetRequiredDeviceExtensions( VkfwUint32* pCount )
 
 void vkfwEnumeratePhysicalDevices( const VkInstance* pInstance, std::vector<VkPhysicalDevice>* pData )
 {
-    _VKFW_REQUIRE_PTR(pData);
+    REQUIRE_PTR(pData);
 
     pData->clear();
 
@@ -112,8 +115,8 @@ VkfwBool vkfwCheckDeviceExtensionSupport( const VkPhysicalDevice* pPhysicalDevic
 
 VkfwSwapchainSupport vkfwQuerySwapchainSupport( const VkPhysicalDevice* pPhysicalDevice, const VkSurfaceKHR* pSurface )
 {
-    _VKFW_REQUIRE_PTR(pPhysicalDevice);
-    _VKFW_REQUIRE_PTR(pSurface);
+    REQUIRE_PTR(pPhysicalDevice);
+    REQUIRE_PTR(pSurface);
 
     VkfwSwapchainSupport swapchainSupport = {};
 
@@ -133,9 +136,9 @@ VkfwSwapchainSupport vkfwQuerySwapchainSupport( const VkPhysicalDevice* pPhysica
 
 VkResult vkfwCreateShaderModule( const VkDevice* pDevice, const VkfwString pBytecode, VkfwSize byteCodeLength, const VkAllocationCallbacks* pCallbacks, VkShaderModule* pShaderModule )
 {
-    _VKFW_REQUIRE_PTR( pDevice );
-    _VKFW_REQUIRE_PTR( pBytecode );
-    _VKFW_REQUIRE_PTR( pShaderModule );
+    REQUIRE_PTR( pDevice );
+    REQUIRE_PTR( pBytecode );
+    REQUIRE_PTR( pShaderModule );
 
     std::vector<uint32_t> code( (byteCodeLength / sizeof(uint32_t)) + 1 );
     memcpy(code.data(), pBytecode, byteCodeLength);
@@ -177,18 +180,23 @@ VkResult vkfwCreateWindowSurface( const VkInstance* pInstance, const VkfwWindow*
 
 void vkfwDestroyWindow( VkfwWindow* pWindow )
 {
-    _VKFW_REQUIRE_PTR_OR_LEAVE( pWindow );
+    REQUIRE_PTR_OR_RETURN( pWindow );
 
     _VkfwWindow* window = (_VkfwWindow*)pWindow;
 
     _vkfw.windowMap.erase( window->handle );
 
     _vkfwPlatformDestroyWindow( window );
+    
+    delete window->config.title;
+    window->config.title;
+
+    delete window;
 }
 
 void vkfwGetWindowResolution(const VkfwWindow* pWindow, VkfwUint32 * width, VkfwUint32 * height)
 {
-    _VKFW_REQUIRE_PTR( pWindow );
+    REQUIRE_PTR( pWindow );
 
     _VkfwWindow* window = (_VkfwWindow*)pWindow;
     
