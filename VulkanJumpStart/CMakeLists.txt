@@ -20,9 +20,9 @@ endif()
 if ( WIN32 )
 	message( "MS Windows" )
 
-	add_definitions( -DWIN32_LEAN_AND_MEAN )
-	add_definitions( -D_CONSOLE )
-	add_definitions( -D_CRT_SECURE_NO_WARNINGS )
+	add_definitions ( -DWIN32_LEAN_AND_MEAN )
+	add_definitions ( -D_CONSOLE )
+	add_definitions ( -D_CRT_SECURE_NO_WARNINGS )
 
 	set( CMAKE_C_FLAGS_RELWITHDEBINFO    "${CMAKE_C_FLAGS_RELWITHDEBINFO} /MT" )
 	set( CMAKE_C_FLAGS_RELEASE           "${CMAKE_C_FLAGS_RELEASE} /MT" )

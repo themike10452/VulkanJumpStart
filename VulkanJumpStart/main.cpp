@@ -40,6 +40,12 @@ VKAPI_ATTR VkBool32 VKAPI_CALL fnDebugReportCallback(
 
 #endif // VKFW_ENABLE_VALIDATION
 
+float vertices[3][3] = {
+	{  0.0f, -0.5f, 0.0f },
+    {  0.5f,  0.5f, 0.0f },
+    { -0.5f,  0.5f, 0.0f }
+};
+
 struct QueueFamilyIndices
 {
 	VkfwInt32 graphics = -1;
@@ -77,7 +83,10 @@ private:
                                           
         VkPtr<VkShaderModule>             vertexShaderModule{ device, &vkDestroyShaderModule };
         VkPtr<VkShaderModule>             fragmentShaderModule{ device, &vkDestroyShaderModule };
-                                          
+        
+	    VkPtr<VkBuffer>                   vertexBuffer{ device, &vkDestroyBuffer };
+        VkPtr<VkDeviceMemory>             vertexBufferMemory{ device, &vkFreeMemory };
+
         VkPtr<VkRenderPass>               renderPass{ device, &vkDestroyRenderPass };
         VkPtr<VkPipelineLayout>           pipelineLayout{ device, &vkDestroyPipelineLayout };
         VkPtr<VkPipeline>                 graphicsPipeline{ device, &vkDestroyPipeline };
@@ -117,6 +126,7 @@ private:
         this->CreateRenderPass();
         this->CreateGraphicsPipeline();
         this->CreateFrameBuffers();
+        this->CreateVertexBuffer();
         this->CreateCommandPool();
         this->AllocateCommandBuffers();
         this->RecordCommandBuffers();
@@ -481,16 +491,29 @@ private:
             
             shaderStages[1] = fragmentShaderStageInfo;
 	    }
+        
+        VkVertexInputBindingDescription
+	    bindingDescription            = {};
+        bindingDescription.binding    = 0;
+        bindingDescription.inputRate  = VK_VERTEX_INPUT_RATE_VERTEX;
+        bindingDescription.stride     = 3 * sizeof(float);
+
+        VkVertexInputAttributeDescription
+        attributeDescription          = {};
+        attributeDescription.binding  = 0;
+        attributeDescription.location = 0;
+        attributeDescription.format   = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescription.offset   = 0;
 
         // Vertex input state
         VkPipelineVertexInputStateCreateInfo
         vertexInputStateInfo                                 = {};
         vertexInputStateInfo.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInputStateInfo.pNext                           = VK_NULL_HANDLE;
-        vertexInputStateInfo.vertexBindingDescriptionCount   = 0;
-        vertexInputStateInfo.pVertexBindingDescriptions      = VK_NULL_HANDLE;
-        vertexInputStateInfo.vertexAttributeDescriptionCount = 0;
-        vertexInputStateInfo.pVertexAttributeDescriptions    = VK_NULL_HANDLE;
+        vertexInputStateInfo.vertexBindingDescriptionCount   = 1;
+        vertexInputStateInfo.pVertexBindingDescriptions      = &bindingDescription;
+        vertexInputStateInfo.vertexAttributeDescriptionCount = 1;
+        vertexInputStateInfo.pVertexAttributeDescriptions    = &attributeDescription;
         vertexInputStateInfo.flags                           = 0;
 
         // Input assembly state
@@ -664,8 +687,76 @@ private:
             throw std::runtime_error("Failed to create command pool");
 	}
 
+    void CreateVertexBuffer()
+	{
+	    VkBufferCreateInfo
+	    bufferInfo             = {};
+        bufferInfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.pNext       = nullptr;
+        bufferInfo.size        = 9 * sizeof(float);
+        bufferInfo.usage       = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        if ( vkCreateBuffer( Vulkan.device, &bufferInfo, nullptr, Vulkan.vertexBuffer.Replace() ) != VK_SUCCESS )
+            throw std::exception("Failed to create vertex buffer");
+
+        VkMemoryRequirements memRequirements;
+        vkGetBufferMemoryRequirements( Vulkan.device, Vulkan.vertexBuffer, &memRequirements );
+
+        VkPhysicalDeviceMemoryProperties properties;
+        vkGetPhysicalDeviceMemoryProperties( Vulkan.physicalDevice, &properties );
+
+        VkMemoryPropertyFlags propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT/* | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT*/;
+
+        VkfwInt32 memoryTypeIndex = -1;
+        for (VkfwUint32 i = 0; i < properties.memoryTypeCount && memoryTypeIndex == -1; i++)
+        {
+            if (memRequirements.memoryTypeBits & (1 << i) && (properties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags)
+                memoryTypeIndex = i;
+        }
+
+        if (memoryTypeIndex == -1)
+            throw std::exception("Failed to allocate buffer memory");
+
+        VkMemoryAllocateInfo 
+	    allocateInfo                 = {};
+        allocateInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocateInfo.pNext           = nullptr;
+        allocateInfo.allocationSize  = memRequirements.size;
+        allocateInfo.memoryTypeIndex = memoryTypeIndex;
+
+        if ( vkAllocateMemory( Vulkan.device, &allocateInfo, nullptr, Vulkan.vertexBufferMemory.Replace() ) != VK_SUCCESS )
+            throw std::exception("Failed to allocate buffer memory");
+
+        vkBindBufferMemory( Vulkan.device, Vulkan.vertexBuffer, Vulkan.vertexBufferMemory, 0 );
+
+        // copy the vertex data to VRAM
+        void* pData;
+        vkMapMemory( Vulkan.device, Vulkan.vertexBufferMemory, 0, bufferInfo.size, 0, &pData );
+        memcpy( pData, vertices, bufferInfo.size );
+
+        // flush
+        VkMappedMemoryRange 
+	    range        = {};
+        range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        range.pNext  = nullptr;
+        range.size   = bufferInfo.size;
+        range.memory = Vulkan.vertexBufferMemory;
+        range.offset = 0;
+
+        if ( vkFlushMappedMemoryRanges( Vulkan.device, 1, &range ) != VK_SUCCESS )
+            throw std::exception("Failed to flush vertex buffer data");
+
+        vkUnmapMemory( Vulkan.device, Vulkan.vertexBufferMemory );
+	}
+
     void AllocateCommandBuffers()
 	{
+        if (Vulkan.swapchainCommandBuffers.size() > 0)
+        {
+            vkFreeCommandBuffers(Vulkan.device, Vulkan.commandPool, Vulkan.swapchainCommandBuffers.size(), Vulkan.swapchainCommandBuffers.data());
+        }
+
 	    VkfwSize count = Vulkan.swapchainFramebuffers.size();
         Vulkan.swapchainCommandBuffers.resize( count );
 
@@ -707,7 +798,10 @@ private:
             vkBeginCommandBuffer( Vulkan.swapchainCommandBuffers[i], &beginInfo );
             vkCmdBeginRenderPass( Vulkan.swapchainCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE );
 
+            VkDeviceSize offset = 0;
+
             vkCmdBindPipeline( Vulkan.swapchainCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, Vulkan.graphicsPipeline );
+            vkCmdBindVertexBuffers( Vulkan.swapchainCommandBuffers[i], 0, 1, &Vulkan.vertexBuffer, &offset );
             vkCmdDraw( Vulkan.swapchainCommandBuffers[i], 3, 1, 0, 0 );
 
             vkCmdEndRenderPass( Vulkan.swapchainCommandBuffers[i] );
