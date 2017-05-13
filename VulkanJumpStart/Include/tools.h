@@ -5,6 +5,8 @@
 
 #include <vector>
 
+#define TEST_FLAGS( LHS, RHS ) ( (LHS & RHS) == RHS )
+
 namespace tools
 {
     void readBinaryFile( const VkfwString filename, std::vector<VkfwChar>* buffer );
