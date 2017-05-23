@@ -4,6 +4,7 @@
 #include "x11_window.h"
 #include "internal.h"
 #include "vulkan_functions.h"
+#include "helper_macros.h"
 
 #include <stdexcept>
 
@@ -12,7 +13,7 @@ Display* display;
 
 void _vkfwCreateWindowX11( _VkfwWindow* window )
 {
-	_VKFW_REQUIRE_PTR( window );
+	REQUIRE_PTR( window );
 
 	//Display* display;
 	Visual* visual;
@@ -44,7 +45,7 @@ void _vkfwCreateWindowX11( _VkfwWindow* window )
 
 	while (1)
 	{
-		XNextEvent(display, &event);
+		XNextEvent( display, &event );
 		if (event.type == Expose)
 			break;
 	}
@@ -68,12 +69,16 @@ VkResult _vkfwCreateSurfaceKHRX11( VkInstance instance, const _VkfwWindow* pWind
 	createInfo.pNext  = nullptr;
 	createInfo.flags  = 0;
 	createInfo.window = pWindow->handle;
-	return vkCreateXlibSurfaceKHR(instance, &createInfo, pCallbacks, pSurface);
+	return vkCreateXlibSurfaceKHR( instance, &createInfo, pCallbacks, pSurface );
 }
 
 void _vkfwPollEventsX11()
 {
-	//TODO
+	// if (XPending( display ))
+	// {
+	// 	XEvent event;
+	// 	XNextEvent( display, &event );
+	// }
 }
 
 #endif // VK_USE_PLATFORM_XLIB_KHR

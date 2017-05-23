@@ -28,6 +28,8 @@ void					vkfwDestroyWindow( VkfwWindow* pWindow );
 void                    vkfwGetWindowResolution( const VkfwWindow* pWindow, VkfwUint32* width, VkfwUint32* height );
 VkfwBool                vkfwWindowShouldClose( const VkfwWindow* pWindow );
 void                    vkfwPollEvents();
+short                   vkfwGetKeyState( int key );
+short                   vkfwGetMouseButtonState( int button );
 
 void					vkfwLoadInstanceLevelEntryPoints( const VkInstance* pInstance );
 void					vkfwLoadDeviceLevelEntryPoints( const VkDevice* pDevice );

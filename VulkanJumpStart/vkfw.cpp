@@ -217,6 +217,16 @@ void vkfwPollEvents()
     _vkfwPlatformPollEvents();
 }
 
+short vkfwGetKeyState( int key )
+{
+    return _vkfwPlatformGetKeyState( key );
+}
+
+short vkfwGetMouseButtonState( int button )
+{
+    return _vkfwPlatformGetMouseButtonState( button );
+}
+
 void vkfwLoadInstanceLevelEntryPoints( const VkInstance* pInstance )
 {
 #define VK_INSTANCE_LEVEL_FUNCTION( FUNC )													\

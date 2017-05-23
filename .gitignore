@@ -5,6 +5,13 @@
 
 # CMake Build
 VulkanJumpStart/CMakeBuild/
+VulkanJumpStart/build/
+
+# Visual Studio Code
+.vscode/
+
+# Spirv Bytecode
+*.spv
 
 # User-specific files
 *.suo

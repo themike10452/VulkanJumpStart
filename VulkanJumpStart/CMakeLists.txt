@@ -59,28 +59,15 @@ endmacro( configure_runtime_files )
 
 include_directories ( "Include" )
 
-set ( HEADER_FILES
-		"Include/vulkan/vk_platform.h"
-		"Include/vulkan/vulkan.h"
-		"Include/types.h"
-		"Include/internal.h"
-		"Include/platform.h"
-		"Include/smartptr.h"
-		"Include/vkptr.h"
-		"Include/vkfw.h"
-		"Include/vulkan_functions.h"
-		"Include/vulkan_functions.inl"
-		"Include/win32_window.h"
-		"Include/x11_window.h"
-		"Include/tools.h")
-
 set ( SOURCE_FILES
 		"vkfw.cpp"
 		"internal.cpp"
 		"vulkan_functions.cpp"
 		"win32_window.cpp"
 		"x11_window.cpp"
+		"win32_input.cpp"
+		"x11_input.cpp"
 		"tools.cpp")
 
 configure_runtime_files( "Data/Shaders/" )
-add_executable ( VulkanJumpStart main.cpp ${HEADER_FILES} ${SOURCE_FILES} )
+add_executable ( VulkanJumpStart main.cpp ${SOURCE_FILES} )
